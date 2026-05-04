@@ -20,7 +20,8 @@ data class VaktLiveData(
     val tripEnergyKwh: Float? = null,
     val connectionState: ConnectionState = ConnectionState.Disconnected,
     val deviceCapability: DeviceCapability? = null,
-    val vehicleProfile: VehicleProfile = VehicleProfile(),
+    val vehicleProfile: VehicleProfile = VehicleProfile.DEFAULT,
+    val vin: String? = null,
     
     // ICE-specific metrics
     val engineLoad: Float? = null,        // %

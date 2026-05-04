@@ -19,6 +19,12 @@ class VaktBridgeServer @Inject constructor(
     private var serverSocket: ServerSocket? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var isRunning = false
+    
+    /**
+     * If false, the server will reject connections to maximize polling speed 
+     * for Vakt's internal UI.
+     */
+    var isBridgeEnabled = true
 
     /**
      * Starts the TCP server on the specified port.
@@ -33,7 +39,11 @@ class VaktBridgeServer @Inject constructor(
                 while (isActive) {
                     val client = serverSocket?.accept()
                     if (client != null) {
-                        handleClient(client)
+                        if (isBridgeEnabled) {
+                            handleClient(client)
+                        } else {
+                            client.close()
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -53,12 +63,12 @@ class VaktBridgeServer @Inject constructor(
                 
                 try {
                     while (isActive && !s.isClosed) {
-                        val command = reader.readLine() ?: break
+                        val command = reader.readLine()?.trim() ?: break
+                        if (command.isEmpty()) continue
                         
-                        // Bridge Logic: 
-                        // If it's a command Vakt already knows (like SOC), return cached data.
-                        // Otherwise, forward it to the real ELM327 via the queue.
-                        val response = processCommand(command)
+                        // Respecting the "No Massaging" rule: 
+                        // Forward the raw command to the ELM327 and return the raw response.
+                        val response = queue.execute(command)
                         
                         writer.write(response + "\r>")
                         writer.flush()
@@ -70,10 +80,6 @@ class VaktBridgeServer @Inject constructor(
         }
     }
 
-    private suspend fun processCommand(command: String): String {
-        // TODO: Map standard PIDs to Vakt's cached data for zero-latency response
-        return "OK" 
-    }
 
     fun stop() {
         isRunning = false

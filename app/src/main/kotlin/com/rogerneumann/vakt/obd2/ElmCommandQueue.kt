@@ -19,14 +19,13 @@ class ElmCommandQueue(
     private val _isPolling = MutableStateFlow(false)
     val isPolling: StateFlow<Boolean> = _isPolling
 
+    private val _rawTraffic = kotlinx.coroutines.flow.MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 64)
+    val rawTraffic = _rawTraffic.asSharedFlow()
+
     init {
         startProcessing()
     }
 
-    /**
-     * Starts the serial consumer that takes commands from the channel 
-     * and executes them via the transport.
-     */
     private fun startProcessing() {
         scope.launch {
             for (request in commandChannel) {
@@ -34,6 +33,9 @@ class ElmCommandQueue(
                     withTimeout(request.timeoutMs) {
                         transport.send(request.command)
                         val response = transport.readResponse()
+                        
+                        // Immediately split: Send to requester AND broadcast raw for the Bridge
+                        _rawTraffic.emit(request.command to response)
                         request.onResult(Result.success(response))
                     }
                 } catch (e: Exception) {

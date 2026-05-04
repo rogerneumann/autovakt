@@ -13,13 +13,21 @@ import kotlin.random.Random
  */
 class OBD2Repository(
     private val transport: ElmBluetoothTransport,
-    private val queue: ElmCommandQueue
+    private val queue: ElmCommandQueue,
+    private val protocolHandler: GmProtocolHandler,
+    private val tripRepository: TripRepository
 ) {
     private val _liveData = MutableStateFlow(VaktLiveData())
     val liveData: StateFlow<VaktLiveData> = _liveData.asStateFlow()
 
     private var pollingJob: Job? = null
     private var isDemoMode = false
+    private var vehicleProfile = VehicleProfile.DEFAULT
+    
+    // Accumulators for the active trip
+    private var accumulatedEnergyKwh = 0f
+    private var accumulatedDistanceMiles = 0f
+    private var lastStatsUpdateTime = 0L
 
     /**
      * Starts the data flow. If [useDemoMode] is true, generates synthetic data.
@@ -46,38 +54,92 @@ class OBD2Repository(
      * Live polling loop for real ELM327 communication.
      */
     private suspend fun runLiveLoop() {
-        // 1. Wait for connection
         if (transport.connectionState.value !is ConnectionState.Connected) {
             return
         }
 
         try {
-            // 2. Handshake / Init
-            queue.execute("ATZ") // Reset
-            queue.execute("ATE0") // Echo off
-            queue.execute("ATI") // Device ID
+            queue.execute("ATZ")
+            queue.execute("ATE0")
             
-            // 3. VIN Discovery (Tiered support)
-            val vinResponse = queue.execute("09 02", timeoutMs = 5000)
-            val isBolt = vinResponse.contains("1G1") // Simplified Bolt detection
+            val vin = protocolHandler.discoverVin()
+            vehicleProfile = VehicleProfileManager.getProfileForVin(vin)
+            
+            _liveData.value = _liveData.value.copy(
+                vin = vin,
+                connectionState = ConnectionState.Connected
+            )
 
-            // 4. Polling Cycle
+            lastStatsUpdateTime = System.currentTimeMillis()
+            accumulatedEnergyKwh = 0f
+            accumulatedDistanceMiles = 0f
+
             while (isActive) {
-                // Poll Hero Metrics (Fast)
-                val soc = pollSoc()
-                val power = pollPower()
+                val loopStartTime = System.currentTimeMillis()
                 
-                _liveData.value = _liveData.value.copy(
-                    soc = soc,
-                    powerKw = power,
-                    connectionState = ConnectionState.Connected
-                )
+                if (vehicleProfile.type == VehicleType.EV) {
+                    pollEvMetrics()
+                } else {
+                    pollIceMetrics()
+                }
+
+                // Update Trip Stats (Energy/Distance integration)
+                updateAccumulators(loopStartTime)
                 
-                delay(2000) // 2s cycle for hero metrics
+                delay(2000)
             }
         } catch (e: Exception) {
             _liveData.value = _liveData.value.copy(connectionState = ConnectionState.Error(e.message ?: "Unknown error"))
         }
+    }
+
+    private fun updateAccumulators(currentTime: Long) {
+        val dtSeconds = (currentTime - lastStatsUpdateTime) / 1000f
+        if (dtSeconds <= 0) return
+
+        val currentPower = _liveData.value.powerKw ?: 0f
+        val currentSpeed = _liveData.value.speedMph ?: 0f
+
+        // Integration: Energy = Power * Time
+        val energyDelta = (currentPower * dtSeconds) / 3600f
+        accumulatedEnergyKwh += energyDelta
+
+        // Integration: Distance = Speed * Time
+        val distanceDelta = (currentSpeed * dtSeconds) / 3600f
+        accumulatedDistanceMiles += distanceDelta
+
+        lastStatsUpdateTime = currentTime
+
+        // Update LiveData for UI
+        _liveData.value = _liveData.value.copy(
+            tripEnergyKwh = accumulatedEnergyKwh,
+            tripDistanceMiles = accumulatedDistanceMiles
+        )
+
+        // Periodically persist to DB (every 30s)
+        if (System.currentTimeMillis() % 30000 < 2500) {
+            CoroutineScope(Dispatchers.IO).launch {
+                tripRepository.updateActiveTrip(accumulatedDistanceMiles, accumulatedEnergyKwh)
+            }
+        }
+    }
+
+    private suspend fun pollEvMetrics() {
+        val soc = pollSoc()
+        val power = pollPower()
+        
+        _liveData.value = _liveData.value.copy(
+            soc = soc,
+            powerKw = power
+        )
+    }
+
+    private suspend fun pollIceMetrics() {
+        // Standard OBD2 fallback
+        val rpm = ObdParser.parseRpm(queue.execute("01 0C"))
+        _liveData.value = _liveData.value.copy(
+            speedMph = rpm?.toFloat() ?: 0f // Placeholder
+        )
     }
 
     /**
@@ -105,12 +167,13 @@ class OBD2Repository(
     }
 
     private suspend fun pollSoc(): Float? {
-        // Placeholder for actual PID logic
-        return 87.0f 
+        val response = queue.execute("01 2F") // Example Fuel Level PID for SOC
+        return ObdParser.parseSoc(response)
     }
 
     private suspend fun pollPower(): Float? {
-        // Placeholder for actual PID logic
-        return 32.5f
+        // Example: In a real Bolt implementation, this would involve multiple PIDs
+        // For now, we use the ObdParser helper with fixed values to demonstrate the flow
+        return ObdParser.calculatePowerKw(380f, 45f) 
     }
 }

@@ -24,6 +24,10 @@ class ElmBluetoothTransport(
     private var inputStream: InputStream? = null
     private var outputStream: OutputStream? = null
     
+    private var lastResponseTime = System.currentTimeMillis()
+    private var watchdogJob: kotlinx.coroutines.Job? = null
+    private val scope = kotlinx.coroutines.CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
+    
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     val connectionState: StateFlow<ConnectionState> = _connectionState
 
@@ -51,6 +55,8 @@ class ElmBluetoothTransport(
                 outputStream = socket?.outputStream
                 
                 _connectionState.value = ConnectionState.Connected
+                lastResponseTime = System.currentTimeMillis()
+                startWatchdog()
             } catch (e: Exception) {
                 _connectionState.value = ConnectionState.Error("Connection failed: ${e.message}")
                 cleanup()
@@ -90,6 +96,7 @@ class ElmBluetoothTransport(
                     buffer.append(chunk)
                     
                     if (chunk.contains(">")) {
+                        lastResponseTime = System.currentTimeMillis() // Reset Watchdog
                         break
                     }
                 }
@@ -98,6 +105,20 @@ class ElmBluetoothTransport(
             }
             
             buffer.toString().trim()
+        }
+    }
+
+    private fun startWatchdog() {
+        watchdogJob?.cancel()
+        watchdogJob = scope.launch {
+            while (isActive) {
+                delay(5000)
+                val timeSinceLastResponse = System.currentTimeMillis() - lastResponseTime
+                if (timeSinceLastResponse > 15000) {
+                    handleTransportError(Exception("Watchdog Timeout"))
+                    break
+                }
+            }
         }
     }
 
@@ -112,6 +133,7 @@ class ElmBluetoothTransport(
     }
 
     private fun cleanup() {
+        watchdogJob?.cancel()
         try {
             inputStream?.close()
             outputStream?.close()
