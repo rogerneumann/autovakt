@@ -57,6 +57,17 @@
             android:foregroundServiceType="connectedDevice"
             android:exported="false" />
 
+        <!-- Notification Listener for Media Proxying -->
+        <service
+            android:name=".media.VaktNotificationListener"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <!-- Required for Android Auto to recognize the app components -->
         <meta-data
             android:name="com.google.android.gms.car.application"
