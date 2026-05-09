@@ -1,52 +1,37 @@
 package com.rogerneumann.vakt.data
 
-/**
- * Manages vehicle-specific profiles based on VIN identification.
- * Automatically loads the correct PID set and UI configurations.
- */
-object VehicleProfileManager {
+import android.content.Context
+import android.content.SharedPreferences
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-    /**
-     * Maps a VIN to a VehicleProfile.
-     * 1G1 = Chevrolet USA
-     * 1G1F... = Bolt EV/EUV
-     */
-    fun getProfileForVin(vin: String?): VehicleProfile {
-        if (vin == null) return VehicleProfile.DEFAULT
-
-        return when {
-            vin.startsWith("1G1FY") || vin.startsWith("1G1FZ") -> {
-                VehicleProfile(
-                    name = "Chevrolet Bolt EUV",
-                    manufacturer = "Chevrolet",
-                    type = VehicleType.EV,
-                    supportedPids = listOf("SOC", "POWER", "BATT_TEMP", "CELL_VOLTS")
-                )
-            }
-            vin.startsWith("1G1") -> {
-                VehicleProfile(
-                    name = "General Motors Vehicle",
-                    manufacturer = "GM",
-                    type = VehicleType.UNKNOWN,
-                    supportedPids = listOf("RPM", "SPEED", "TEMP")
-                )
-            }
-            else -> VehicleProfile.DEFAULT
-        }
-    }
-}
-
-data class VehicleProfile(
-    val name: String,
-    val manufacturer: String,
-    val type: VehicleType,
-    val supportedPids: List<String>
+@Singleton
+class VehicleProfileManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val profileHub: VehicleProfileHub
 ) {
-    companion object {
-        val DEFAULT = VehicleProfile("Unknown Vehicle", "Generic", VehicleType.UNKNOWN, emptyList())
+    private val prefs: SharedPreferences = context.getSharedPreferences("vakt_prefs", Context.MODE_PRIVATE)
+
+    fun getActiveProfile(): VehicleProfile {
+        val id = prefs.getString("active_vehicle_id", "chevy_bolt_euv_2023") ?: "chevy_bolt_euv_2023"
+        return profileHub.getProfile(id) ?: VehicleProfile.DEFAULT
+    }
+
+    fun setActiveProfile(id: String) {
+        prefs.edit().putString("active_vehicle_id", id).apply()
+    }
+    
+    fun getUnitPreference(): UnitSystem {
+        val unit = prefs.getString("unit_system", "IMPERIAL") ?: "IMPERIAL"
+        return UnitSystem.valueOf(unit)
+    }
+
+    fun setUnitPreference(system: UnitSystem) {
+        prefs.edit().putString("unit_system", system.name).apply()
     }
 }
 
-enum class VehicleType {
-    EV, ICE, HYBRID, UNKNOWN
+enum class UnitSystem {
+    METRIC, IMPERIAL
 }

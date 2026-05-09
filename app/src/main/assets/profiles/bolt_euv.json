@@ -1,0 +1,34 @@
+{
+  "id": "chevy_bolt_euv_2023",
+  "make": "Chevrolet",
+  "model": "Bolt EUV",
+  "year": 2023,
+  "region": "US",
+  "powertrain": "EV",
+  "pids": [
+    {
+      "name": "State of Charge",
+      "shortName": "SOC",
+      "modeAndPid": "2202BC",
+      "equation": "A*100/255",
+      "header": "7E4",
+      "units": "%"
+    },
+    {
+      "name": "High Voltage",
+      "shortName": "HV_V",
+      "modeAndPid": "2202BD",
+      "equation": "(A*256+B)/10",
+      "header": "7E4",
+      "units": "V"
+    },
+    {
+      "name": "High Current",
+      "shortName": "HV_I",
+      "modeAndPid": "2202BE",
+      "equation": "((A*256+B)-32768)/10",
+      "header": "7E4",
+      "units": "A"
+    }
+  ]
+}

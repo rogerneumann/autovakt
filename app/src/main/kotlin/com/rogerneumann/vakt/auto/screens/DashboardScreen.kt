@@ -1,46 +1,97 @@
 package com.rogerneumann.vakt.auto.screens
 
+import android.graphics.Canvas
+import android.graphics.Rect
+import androidx.car.app.AppManager
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
-import androidx.car.app.model.*
-import com.rogerneumann.vakt.R
+import androidx.car.app.SurfaceCallback
+import androidx.car.app.SurfaceContainer
+import androidx.car.app.model.Template
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import com.rogerneumann.vakt.auto.MultiPaneLayoutManager
+import com.rogerneumann.vakt.auto.render.GaugeRenderer
+import com.rogerneumann.vakt.data.OBD2Repository
+import com.rogerneumann.vakt.data.VaktLiveData
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 /**
  * The primary full-screen dashboard for Vakt.
- * Implements a multi-row layout for telemetry and media controls.
+ *
+ * Implements high-performance Canvas drawing via [SurfaceCallback].
+ * Template building is fully delegated to [MultiPaneLayoutManager] (Phase 4B)
+ * so the action strip and background color adapt automatically to the
+ * head unit's display mode (WIDE / FULL_SCREEN / NARROW).
  */
-class DashboardScreen(carContext: CarContext) : Screen(carContext) {
+class DashboardScreen(
+    carContext: CarContext,
+    private val repository: OBD2Repository
+) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
+
+    private val renderer = GaugeRenderer()
+    private val layoutManager = MultiPaneLayoutManager(carContext)
+
+    private var lastData: VaktLiveData = VaktLiveData()
+    private var currentSurfaceContainer: SurfaceContainer? = null
+
+    init {
+        lifecycle.addObserver(this)
+        carContext.getCarService(AppManager::class.java).setSurfaceCallback(this)
+
+        lifecycleScope.launch {
+            repository.liveData.collectLatest { data ->
+                lastData = data
+                renderFrame()
+                // Refresh the template so action strip colors stay in sync
+                // with connection state changes (Connected → Error, etc.)
+                invalidate()
+            }
+        }
+    }
+
+    // ── Template (Phase 4B) ───────────────────────────────────────────────────
 
     override fun onGetTemplate(): Template {
-        val paneBuilder = Pane.Builder()
-            .addRow(
-                Row.Builder()
-                    .setTitle("State of Charge")
-                    .addText("87%")
-                    .build()
-            )
-            .addRow(
-                Row.Builder()
-                    .setTitle("Real-time Power")
-                    .addText("32.5 kW")
-                    .build()
-            )
-            .addRow(
-                Row.Builder()
-                    .setTitle("Efficiency")
-                    .addText("3.8 mi/kWh avg")
-                    .build()
-            )
-            .addAction(
-                Action.Builder()
-                    .setTitle("New Trip")
-                    .setOnClickListener { /* TODO: Manual trip reset */ }
-                    .build()
-            )
-
-        return PaneTemplate.Builder(paneBuilder.build())
-            .setHeaderAction(Action.APP_ICON)
-            .setTitle("Vakt Dashboard")
-            .build()
+        return layoutManager.buildTemplate(
+            data       = lastData,
+            onNewTrip  = { /* TODO Phase 6: repository.startNewTrip() */ },
+            onCycleView = { invalidate() } // force a re-render + future metric cycle
+        )
     }
+
+    // ── SurfaceCallback ───────────────────────────────────────────────────────
+
+    override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
+        currentSurfaceContainer = surfaceContainer
+        renderFrame()
+    }
+
+    override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
+        currentSurfaceContainer = null
+    }
+
+    override fun onVisibleAreaChanged(visibleArea: Rect) {
+        renderFrame()
+    }
+
+    // ── Canvas Rendering ──────────────────────────────────────────────────────
+
+    /**
+     * Locks the surface canvas, delegates drawing to [GaugeRenderer], then
+     * posts. Only called when new data arrives (1–2 Hz) — not on every frame.
+     */
+    private fun renderFrame() {
+        val surface = currentSurfaceContainer?.surface ?: return
+        if (!surface.isValid) return
+        try {
+            val canvas: Canvas = surface.lockCanvas(null)
+            renderer.draw(canvas, lastData)
+            surface.unlockCanvasAndPost(canvas)
+        } catch (_: Exception) { /* surface may have been destroyed */ }
+    }
+
+    override fun onStart(owner: LifecycleOwner) { /* service lifecycle managed externally */ }
 }

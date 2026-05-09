@@ -4,13 +4,16 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import com.rogerneumann.vakt.data.VaktLiveData
+import kotlinx.coroutines.flow.asSharedFlow
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Ensures commands are sent sequentially to the ELM327.
  * Manages the polling loop and command timeouts.
  */
-class ElmCommandQueue(
+@Singleton
+class ElmCommandQueue @Inject constructor(
     private val transport: ElmBluetoothTransport
 ) {
     private val commandChannel = Channel<CommandRequest>(Channel.UNLIMITED)

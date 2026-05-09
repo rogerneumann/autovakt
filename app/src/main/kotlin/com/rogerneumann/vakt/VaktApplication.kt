@@ -1,10 +1,17 @@
 package com.rogerneumann.vakt
 
 import android.app.Application
+import android.util.Log
 import dagger.hilt.android.HiltAndroidApp
 
-/**
- * Entry point for the Hilt dependency injection framework.
- */
 @HiltAndroidApp
-class VaktApplication : Application()
+class VaktApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            Log.e("VAKT_CRASH", "Uncaught exception on thread ${thread.name}", throwable)
+            defaultHandler?.uncaughtException(thread, throwable)
+        }
+    }
+}

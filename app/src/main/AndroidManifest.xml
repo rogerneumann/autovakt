@@ -10,6 +10,7 @@
     <!-- Foreground service for continuous polling -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".VaktApplication"
@@ -30,6 +31,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ui.SettingsActivity"
+            android:exported="false"
+            android:label="Settings"
+            android:theme="@style/Theme.Vakt" />
+
+        <activity
+            android:name=".ui.history.HistoryActivity"
+            android:exported="false"
+            android:label="Trip History"
+            android:theme="@style/Theme.Vakt" />
 
         <!-- Android Auto: Full-Screen Dashboard (IOT Category) -->
         <service

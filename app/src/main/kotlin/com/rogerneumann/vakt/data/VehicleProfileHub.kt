@@ -1,0 +1,86 @@
+package com.rogerneumann.vakt.data
+
+import android.content.Context
+import com.rogerneumann.vakt.obd2.PidFormulaParser
+import dagger.hilt.android.qualifiers.ApplicationContext
+import org.json.JSONObject
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class VehicleProfileHub @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+
+    private val profiles = mutableMapOf<String, VehicleProfile>()
+
+    init {
+        loadEmbeddedProfiles()
+    }
+
+    /**
+     * Loads the "Starter Pack" from the app assets.
+     */
+    private fun loadEmbeddedProfiles() {
+        try {
+            val assetManager = context.assets
+            val files = assetManager.list("profiles") ?: return
+            
+            for (fileName in files) {
+                if (fileName.endsWith(".json")) {
+                    val jsonString = assetManager.open("profiles/$fileName").bufferedReader().use { it.readText() }
+                    val profile = parseProfile(jsonString)
+                    profiles[profile.id] = profile
+                }
+            }
+        } catch (e: Exception) {
+            // Log error
+        }
+    }
+
+    /**
+     * Returns all available profiles for selection.
+     */
+    fun getAvailableProfiles(): List<VehicleProfile> {
+        return profiles.values.toList()
+    }
+
+    /**
+     * Finds a profile by its unique ID.
+     */
+    fun getProfile(id: String): VehicleProfile? {
+        return profiles[id]
+    }
+
+    private fun parseProfile(jsonString: String): VehicleProfile {
+        val json = JSONObject(jsonString)
+        val pidsJson = json.optJSONArray("pids")
+        val customPids = mutableListOf<CustomPid>()
+
+        if (pidsJson != null) {
+            for (i in 0 until pidsJson.length()) {
+                val p = pidsJson.getJSONObject(i)
+                customPids.add(CustomPid(
+                    name = p.getString("name"),
+                    shortName = p.getString("shortName"),
+                    modeAndPid = p.getString("modeAndPid"),
+                    equation = p.getString("equation"),
+                    minValue = p.optDouble("minValue", 0.0).toFloat(),
+                    maxValue = p.optDouble("maxValue", 100.0).toFloat(),
+                    units = p.optString("units", ""),
+                    header = p.optString("header", null)
+                ))
+            }
+        }
+
+        return VehicleProfile(
+            id = json.getString("id"),
+            make = json.optString("make"),
+            model = json.optString("model"),
+            year = json.optInt("year"),
+            region = json.optString("region"),
+            powertrain = PowertrainType.valueOf(json.optString("powertrain", "UNKNOWN")),
+            customPids = customPids
+        )
+    }
+}

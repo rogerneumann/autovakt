@@ -14,6 +14,7 @@ data class VaktLiveData(
     val battTempMaxC: Float? = null,
     val battTempMinC: Float? = null,
     val speedMph: Float? = null,
+    val rpm: Int? = null,                 // ICE: Engine RPM
     val instantMiPerKwh: Float? = null,
     val averageMiPerKwh: Float? = null,
     val tripDistanceMiles: Float? = null,
@@ -32,5 +33,8 @@ data class VaktLiveData(
     // Media Info (Proxy from system)
     val currentSongTitle: String? = null,
     val currentSongArtist: String? = null,
-    val activeMediaAppPackage: String? = null
+    val activeMediaAppPackage: String? = null,
+    
+    // Dynamic Custom PIDs
+    val customPids: Map<String, Float> = emptyMap() // Map of ShortName -> Value
 )

@@ -5,6 +5,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.rogerneumann.vakt.data.OBD2Repository
@@ -19,6 +21,7 @@ import javax.inject.Inject
 class OBD2ForegroundService : Service() {
 
     @Inject lateinit var repository: OBD2Repository
+    @Inject lateinit var bridgeServer: com.rogerneumann.vakt.obd2.VaktBridgeServer
     private val channelId = "vakt_obd_service"
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -27,13 +30,20 @@ class OBD2ForegroundService : Service() {
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("Vakt Connected")
             .setContentText("Monitoring vehicle telemetry...")
-            .setSmallIcon(android.R.drawable.stat_notify_sync)
+            .setSmallIcon(com.rogerneumann.vakt.R.mipmap.ic_launcher)
             .build()
             
-        startForeground(1, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+        } else {
+            startForeground(1, notification)
+        }
         
         // Start the polling loop (Demo mode enabled for now)
         repository.start(useDemoMode = true)
+        
+        // Start the TCP bridge for 3rd party apps
+        bridgeServer.start()
         
         return START_STICKY
     }
@@ -53,5 +63,6 @@ class OBD2ForegroundService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         repository.stop()
+        bridgeServer.stop()
     }
 }

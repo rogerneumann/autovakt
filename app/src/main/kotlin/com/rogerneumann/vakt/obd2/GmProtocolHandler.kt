@@ -1,24 +1,66 @@
 package com.rogerneumann.vakt.obd2
 
+import javax.inject.Inject
+import javax.inject.Singleton
+
 /**
- * Handles GM-specific protocol sequences, including VIN discovery 
- * and multi-frame message reassembly.
+ * Handles GM-specific protocol sequences, including VIN discovery,
+ * ECU header management, and multi-frame message reassembly.
  */
-class GmProtocolHandler(private val queue: ElmCommandQueue) {
+@Singleton
+class GmProtocolHandler @Inject constructor(private val queue: ElmCommandQueue) {
+
+    private var currentHeader: String? = null
 
     /**
      * Attempts to retrieve the 17-character VIN from the vehicle.
      * Uses Mode 09 PID 02.
      */
     suspend fun discoverVin(): String? {
-        // 1. Request VIN
+        ensureHeader("7E0") // ECM header for VIN
         val rawResponse = queue.execute("09 02", timeoutMs = 5000)
-        
-        // 2. Reassemble if multiline
         val hexString = reassembleMultiline(rawResponse)
-        
-        // 3. Extract and Decode ASCII
         return decodeVin(hexString)
+    }
+
+    /**
+     * Requests the State of Charge (SOC) from the BMS.
+     * Header: 7E4, PID: 22 02BC
+     */
+    suspend fun requestSoc(): Float? {
+        ensureHeader("7E4")
+        val response = queue.execute("22 02BC")
+        return ObdParser.parseGmSoc(response)
+    }
+
+    /**
+     * Requests HV Battery Voltage.
+     * Header: 7E4, PID: 22 02BD
+     */
+    suspend fun requestVoltage(): Float? {
+        ensureHeader("7E4")
+        val response = queue.execute("22 02BD")
+        return ObdParser.parseGmVoltage(response)
+    }
+
+    /**
+     * Requests HV Battery Current.
+     * Header: 7E4, PID: 22 02BE
+     */
+    suspend fun requestCurrent(): Float? {
+        ensureHeader("7E4")
+        val response = queue.execute("22 02BE")
+        return ObdParser.parseGmCurrent(response)
+    }
+
+    /**
+     * Sets the ELM327 ECU header if it's different from the current one.
+     */
+    private suspend fun ensureHeader(header: String) {
+        if (currentHeader != header) {
+            queue.execute("ATSH $header")
+            currentHeader = header
+        }
     }
 
     /**
@@ -33,7 +75,7 @@ class GmProtocolHandler(private val queue: ElmCommandQueue) {
         
         for (line in lines) {
             val clean = line.trim()
-            if (clean.isEmpty()) continue
+            if (clean.isEmpty() || clean == ">") continue
             
             // Strip the "0:", "1:", etc. prefixes
             val data = if (clean.contains(":")) {
@@ -48,13 +90,11 @@ class GmProtocolHandler(private val queue: ElmCommandQueue) {
     }
 
     private fun decodeVin(hex: String): String? {
-        if (hex.length < 34) return null // 17 chars * 2 hex digits
+        if (hex.length < 34) return null
         
         return try {
-            // The VIN usually starts after the Service ID (49) and PID (02)
-            // and often a number of items byte. We look for the first ASCII character.
             val vinHex = if (hex.startsWith("4902")) {
-                hex.substring(6) // Skip 49 02 and the next byte
+                hex.substring(6)
             } else {
                 hex
             }
@@ -63,7 +103,7 @@ class GmProtocolHandler(private val queue: ElmCommandQueue) {
             for (i in 0 until (vinHex.length / 2)) {
                 val byteHex = vinHex.substring(i * 2, i * 2 + 2)
                 val charCode = byteHex.toInt(16)
-                if (charCode in 32..126) { // Printable ASCII
+                if (charCode in 32..126) {
                     result.append(charCode.toChar())
                 }
             }

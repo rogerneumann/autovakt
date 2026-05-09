@@ -7,15 +7,22 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.UUID
 
+import javax.inject.Inject
+import javax.inject.Singleton
+
 /**
  * Handles the low-level Bluetooth RFCOMM transport for ELM327 communication.
- * Includes auto-reconnect logic and connection state monitoring.
  */
-class ElmBluetoothTransport(
+@Singleton
+class ElmBluetoothTransport @Inject constructor(
     private val bluetoothAdapter: BluetoothAdapter?
 ) {
     private val SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
@@ -23,17 +30,16 @@ class ElmBluetoothTransport(
     private var socket: BluetoothSocket? = null
     private var inputStream: InputStream? = null
     private var outputStream: OutputStream? = null
-    
+
+    // P1 FIX: Store address so the watchdog can reconnect automatically.
+    private var lastDeviceAddress: String? = null
     private var lastResponseTime = System.currentTimeMillis()
     private var watchdogJob: kotlinx.coroutines.Job? = null
-    private val scope = kotlinx.coroutines.CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     val connectionState: StateFlow<ConnectionState> = _connectionState
 
-    /**
-     * Connects to a specific Bluetooth device.
-     */
     suspend fun connect(deviceAddress: String) {
         if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
             _connectionState.value = ConnectionState.Error("Bluetooth is disabled")
@@ -43,9 +49,8 @@ class ElmBluetoothTransport(
         withContext(Dispatchers.IO) {
             try {
                 _connectionState.value = ConnectionState.Connecting
+                lastDeviceAddress = deviceAddress   // P1: remember for watchdog reconnect
                 val device = bluetoothAdapter.getRemoteDevice(deviceAddress)
-                
-                // Cancel discovery as it slows down connection
                 bluetoothAdapter.cancelDiscovery()
                 
                 socket = device.createRfcommSocketToServiceRecord(SPP_UUID)
@@ -64,9 +69,6 @@ class ElmBluetoothTransport(
         }
     }
 
-    /**
-     * Sends a raw command string to the ELM327.
-     */
     suspend fun send(command: String) {
         withContext(Dispatchers.IO) {
             try {
@@ -79,9 +81,6 @@ class ElmBluetoothTransport(
         }
     }
 
-    /**
-     * Reads the response until the '>' prompt appears.
-     */
     suspend fun readResponse(): String {
         return withContext(Dispatchers.IO) {
             val buffer = StringBuilder()
@@ -96,7 +95,7 @@ class ElmBluetoothTransport(
                     buffer.append(chunk)
                     
                     if (chunk.contains(">")) {
-                        lastResponseTime = System.currentTimeMillis() // Reset Watchdog
+                        lastResponseTime = System.currentTimeMillis()
                         break
                     }
                 }
@@ -115,8 +114,23 @@ class ElmBluetoothTransport(
                 delay(5000)
                 val timeSinceLastResponse = System.currentTimeMillis() - lastResponseTime
                 if (timeSinceLastResponse > 15000) {
-                    handleTransportError(Exception("Watchdog Timeout"))
-                    break
+                    // P1 FIX: attempt reconnect instead of just erroring out.
+                    val addr = lastDeviceAddress
+                    if (addr != null) {
+                        _connectionState.value = ConnectionState.Connecting
+                        cleanup() // close dead socket first
+                        try {
+                            // connect() will call startWatchdog() on success,
+                            // which cancels this job via watchdogJob?.cancel().
+                            connect(addr)
+                        } catch (e: Exception) {
+                            _connectionState.value = ConnectionState.Error("Reconnect failed: ${e.message}")
+                            // Loop continues — will retry on next 5s tick.
+                        }
+                    } else {
+                        _connectionState.value = ConnectionState.Error("Watchdog timeout — no address to reconnect")
+                        break
+                    }
                 }
             }
         }
@@ -139,7 +153,7 @@ class ElmBluetoothTransport(
             outputStream?.close()
             socket?.close()
         } catch (e: Exception) {
-            // Ignore cleanup errors
+            // Ignore
         } finally {
             inputStream = null
             outputStream = null
