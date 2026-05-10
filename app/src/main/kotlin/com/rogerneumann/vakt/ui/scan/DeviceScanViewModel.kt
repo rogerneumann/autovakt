@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,7 +43,7 @@ data class ScanState(
 
 @HiltViewModel
 class DeviceScanViewModel @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val bluetoothAdapter: BluetoothAdapter?
 ) : ViewModel() {
 

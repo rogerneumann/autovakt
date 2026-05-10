@@ -211,9 +211,9 @@ class ElmBleTransport @Inject constructor(
      * Enables notifications on the RX characteristic.
      */
     private fun enableNotifications(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+        gatt.setCharacteristicNotification(characteristic, true)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Modern API (API 33+)
-            gatt.setNotificationEnabled(characteristic, true)
+            // Modern API (API 33+): use new writeDescriptor signature
             val descriptor = characteristic.getDescriptor(CCCD_UUID)
             if (descriptor != null) {
                 gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
