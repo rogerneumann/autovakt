@@ -2,10 +2,12 @@ package com.rogerneumann.vakt.ui
 
 import android.Manifest
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -14,15 +16,20 @@ import androidx.lifecycle.lifecycleScope
 import com.rogerneumann.vakt.databinding.ActivityMainBinding
 import com.rogerneumann.vakt.service.OBD2ForegroundService
 import com.rogerneumann.vakt.ui.history.HistoryActivity
+import com.rogerneumann.vakt.ui.scan.DeviceScanFragment
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainViewModel by viewModels()
+
+    @Inject
+    lateinit var sharedPreferences: SharedPreferences
 
     private var titleTapCount = 0
 
@@ -59,7 +66,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupButtons() {
         binding.btnStartService.setOnClickListener {
-            startForegroundService(Intent(this, OBD2ForegroundService::class.java))
+            onStartOBD2Clicked()
         }
 
         binding.btnStopService.setOnClickListener {
@@ -114,6 +121,24 @@ class MainActivity : AppCompatActivity() {
             viewModel.liveData.collectLatest { data ->
                 binding.dashboardView.updateData(data)
             }
+        }
+    }
+
+    private fun onStartOBD2Clicked() {
+        val savedAddress = sharedPreferences.getString("saved_device_address", null)
+        val savedType = sharedPreferences.getString("saved_device_type", null)
+
+        if (savedAddress != null && savedType != null) {
+            // Device already saved - connect directly
+            Toast.makeText(
+                this,
+                "Connecting to saved device...",
+                Toast.LENGTH_SHORT
+            ).show()
+            startForegroundService(Intent(this, OBD2ForegroundService::class.java))
+        } else {
+            // No device saved - show scanner
+            DeviceScanFragment().show(supportFragmentManager, "device_scan")
         }
     }
 }

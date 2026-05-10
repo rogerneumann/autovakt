@@ -3,6 +3,7 @@ package com.rogerneumann.vakt.di
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.room.Room
 import com.rogerneumann.vakt.db.TripDao
 import com.rogerneumann.vakt.db.VaktDatabase
@@ -36,4 +37,10 @@ object AppModule {
 
     @Provides
     fun provideTripDao(db: VaktDatabase): TripDao = db.tripDao()
+
+    @Provides
+    @Singleton
+    fun provideSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
+        return context.getSharedPreferences("vakt_prefs", Context.MODE_PRIVATE)
+    }
 }

@@ -1,0 +1,197 @@
+package com.rogerneumann.vakt.ui.scan
+
+import android.Manifest
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.le.BluetoothLeScanner
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+data class ScannedDevice(
+    val address: String,
+    val name: String?,
+    val rssi: Int,
+    val type: DeviceType
+)
+
+enum class DeviceType {
+    CLASSIC, BLE
+}
+
+data class ScanState(
+    val isScanning: Boolean = false,
+    val devices: List<ScannedDevice> = emptyList(),
+    val error: String? = null
+)
+
+@HiltViewModel
+class DeviceScanViewModel @Inject constructor(
+    private val context: Context,
+    private val bluetoothAdapter: BluetoothAdapter?
+) : ViewModel() {
+
+    private val deviceMap = mutableMapOf<String, ScannedDevice>()
+
+    private val _scanState = MutableStateFlow(ScanState())
+    val scanState: StateFlow<ScanState> = _scanState.asStateFlow()
+
+    private val bleScanner: BluetoothLeScanner? = bluetoothAdapter?.bluetoothLeScanner
+
+    // Broadcast receiver for Classic Bluetooth discovery
+    private val discoveryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                BluetoothDevice.ACTION_FOUND -> {
+                    val device: BluetoothDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                    }
+
+                    val rssi: Int = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE).toInt()
+
+                    device?.let {
+                        val address = it.address
+                        val name = it.name ?: "Unknown"
+
+                        deviceMap[address] = ScannedDevice(
+                            address = address,
+                            name = name,
+                            rssi = rssi,
+                            type = DeviceType.CLASSIC
+                        )
+                        updateDeviceList()
+                    }
+                }
+            }
+        }
+    }
+
+    // Scan callback for BLE
+    private val bleScanCallback = object : ScanCallback() {
+        override fun onScanResult(callbackType: Int, result: ScanResult?) {
+            result?.let {
+                val address = it.device.address
+                val name = it.device.name ?: "Unknown"
+                val rssi = it.rssi
+
+                deviceMap[address] = ScannedDevice(
+                    address = address,
+                    name = name,
+                    rssi = rssi,
+                    type = DeviceType.BLE
+                )
+                updateDeviceList()
+            }
+        }
+
+        override fun onScanFailed(errorCode: Int) {
+            _scanState.value = _scanState.value.copy(
+                error = "BLE scan failed with error code: $errorCode"
+            )
+        }
+    }
+
+    fun startScan() {
+        if (!hasBluetoothPermissions()) {
+            _scanState.value = _scanState.value.copy(
+                error = "Missing Bluetooth permissions"
+            )
+            return
+        }
+
+        _scanState.value = ScanState(isScanning = true)
+        deviceMap.clear()
+
+        viewModelScope.launch(Dispatchers.Default) {
+            try {
+                // Start Classic Bluetooth discovery
+                startClassicDiscovery()
+
+                // Start BLE scan
+                startBleScan()
+            } catch (e: Exception) {
+                _scanState.value = _scanState.value.copy(
+                    error = "Scan failed: ${e.message}",
+                    isScanning = false
+                )
+            }
+        }
+    }
+
+    fun stopScan() {
+        try {
+            bluetoothAdapter?.cancelDiscovery()
+            context.unregisterReceiver(discoveryReceiver)
+            bleScanner?.stopScan(bleScanCallback)
+            _scanState.value = _scanState.value.copy(isScanning = false)
+        } catch (e: Exception) {
+            // Ignore errors during cleanup
+        }
+    }
+
+    private fun startClassicDiscovery() {
+        if (!hasBluetoothPermissions()) return
+
+        val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+        try {
+            context.registerReceiver(discoveryReceiver, filter, Context.RECEIVER_EXPORTED)
+            bluetoothAdapter?.startDiscovery()
+        } catch (e: Exception) {
+            // Permission denied or Bluetooth not available
+        }
+    }
+
+    private fun startBleScan() {
+        if (!hasBluetoothPermissions()) return
+
+        try {
+            bleScanner?.startScan(bleScanCallback)
+        } catch (e: Exception) {
+            // Permission denied or BLE not available
+        }
+    }
+
+    private fun updateDeviceList() {
+        _scanState.value = _scanState.value.copy(
+            devices = deviceMap.values.sortedByDescending { it.rssi }
+        )
+    }
+
+    private fun hasBluetoothPermissions(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.BLUETOOTH_SCAN
+            ) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopScan()
+    }
+}
