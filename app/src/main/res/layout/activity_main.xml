@@ -86,7 +86,24 @@
 
         </LinearLayout>
 
-        <!-- Row 2: Settings / History -->
+        <!-- Row 2: Stop Trip -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <Button
+                android:id="@+id/btnStopTrip"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:backgroundTint="#B00020"
+                android:text="Stop Trip" />
+
+        </LinearLayout>
+
+        <!-- Row 3: Settings / History -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

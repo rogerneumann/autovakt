@@ -71,6 +71,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        binding.btnStopTrip.setOnClickListener {
+            viewModel.stopTrip()
+        }
+
         binding.btnSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }

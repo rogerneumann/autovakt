@@ -1,9 +1,12 @@
 package com.rogerneumann.vakt.ui
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.rogerneumann.vakt.data.OBD2Repository
+import com.rogerneumann.vakt.data.TripRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -12,7 +15,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val repository: OBD2Repository
+    private val repository: OBD2Repository,
+    private val tripRepository: TripRepository
 ) : ViewModel() {
 
     val liveData = repository.liveData
@@ -35,6 +39,18 @@ class MainViewModel @Inject constructor(
     fun stopDemo() {
         _isDemoMode = false
         repository.stop()
+    }
+
+    /**
+     * Stops the currently active trip. Persists the trip to the database
+     * with the current SOC as the ending battery state.
+     */
+    fun stopTrip() {
+        viewModelScope.launch {
+            tripRepository.endCurrentTrip(
+                finalSoc = liveData.value.soc ?: 0f
+            )
+        }
     }
 
     override fun onCleared() {
