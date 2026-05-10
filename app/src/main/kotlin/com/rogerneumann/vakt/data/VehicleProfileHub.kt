@@ -16,6 +16,7 @@ class VehicleProfileHub @Inject constructor(
 
     init {
         loadEmbeddedProfiles()
+        loadUserImportedProfiles()
     }
 
     /**
@@ -25,12 +26,37 @@ class VehicleProfileHub @Inject constructor(
         try {
             val assetManager = context.assets
             val files = assetManager.list("profiles") ?: return
-            
+
             for (fileName in files) {
                 if (fileName.endsWith(".json")) {
                     val jsonString = assetManager.open("profiles/$fileName").bufferedReader().use { it.readText() }
                     val profile = parseProfile(jsonString)
                     profiles[profile.id] = profile
+                }
+            }
+        } catch (e: Exception) {
+            // Log error
+        }
+    }
+
+    /**
+     * Loads user-imported profiles from filesDir/profiles/
+     */
+    private fun loadUserImportedProfiles() {
+        try {
+            val profilesDir = java.io.File(context.filesDir, "profiles")
+            if (!profilesDir.exists()) {
+                return
+            }
+
+            val files = profilesDir.listFiles { file -> file.name.endsWith(".json") } ?: return
+            for (file in files) {
+                try {
+                    val jsonString = file.readText()
+                    val profile = parseProfile(jsonString)
+                    profiles[profile.id] = profile
+                } catch (e: Exception) {
+                    // Skip malformed files, continue loading others
                 }
             }
         } catch (e: Exception) {
@@ -107,4 +133,44 @@ class VehicleProfileHub @Inject constructor(
         profiles.values.filter { profile ->
             profile.vinPatterns.any { pattern -> vin.startsWith(pattern, ignoreCase = true) }
         }
+
+    /**
+     * Imports a profile from JSON string, validates required fields, saves to filesDir/profiles/,
+     * and reloads the profiles map.
+     *
+     * @param jsonString The JSON string containing the profile definition
+     * @throws IllegalArgumentException if JSON is invalid or missing required fields
+     * @throws Exception if file write fails
+     */
+    fun importProfileFromJson(jsonString: String) {
+        // Parse and validate the profile
+        val profile = parseProfile(jsonString)
+
+        // Validate required fields
+        require(profile.id.isNotBlank()) { "Profile must have an 'id' field" }
+        require(profile.make != null && profile.make.isNotBlank()) { "Profile must have a 'make' field" }
+        require(profile.customPids.isNotEmpty()) { "Profile must have at least one PID in 'customPids'" }
+
+        // Save to filesDir/profiles/<id>.json
+        val profilesDir = java.io.File(context.filesDir, "profiles")
+        if (!profilesDir.exists()) {
+            profilesDir.mkdirs()
+        }
+
+        val profileFile = java.io.File(profilesDir, "${profile.id}.json")
+        profileFile.writeText(jsonString)
+
+        // Update the profiles map and reload everything
+        reloadProfiles()
+    }
+
+    /**
+     * Reloads all profiles from both embedded assets and user-imported files.
+     * Call after importing a new profile.
+     */
+    private fun reloadProfiles() {
+        profiles.clear()
+        loadEmbeddedProfiles()
+        loadUserImportedProfiles()
+    }
 }
