@@ -35,8 +35,22 @@ class OBD2Repository @Inject constructor(
 
     private var accumulatedEnergyKwh = 0f
     private var accumulatedDistanceMiles = 0f
+    private var accumulatedFuelGallons = 0f
     private var lastStatsUpdateTime = 0L
     private var lastPersistTime = 0L
+
+    // Rolling window for instant efficiency smoothing (size driven by user preference later)
+    private val smoothingWindowSize: Int
+        get() = 5  // default 5 samples × 2 s = 10 s; key "smoothing_window_size" reserved for Settings
+    private val efficiencySamples = ArrayDeque<Float>()
+
+    private fun addEfficiencySample(v: Float) {
+        efficiencySamples.addLast(v)
+        while (efficiencySamples.size > smoothingWindowSize) efficiencySamples.removeFirst()
+    }
+
+    private fun smoothedInstantEfficiency(): Float? =
+        if (efficiencySamples.isEmpty()) null else efficiencySamples.average().toFloat()
 
     suspend fun startManualTrip() {
         tripRepository.startManualTrip(
@@ -88,6 +102,8 @@ class OBD2Repository @Inject constructor(
             lastPersistTime = System.currentTimeMillis()
             accumulatedEnergyKwh = 0f
             accumulatedDistanceMiles = 0f
+            accumulatedFuelGallons = 0f
+            efficiencySamples.clear()
 
             while (coroutineContext.isActive) {
                 pollCustomPids()
@@ -141,18 +157,41 @@ class OBD2Repository @Inject constructor(
         val power = updatedCustom["PWR"]
             ?: if (hvVoltage != null && hvCurrent != null) hvVoltage * hvCurrent / 1000f else null
 
+        val fuelRateLh = updatedCustom["FUEL_RATE"]
+        val fuelRateGph = if (fuelRateLh != null) fuelRateLh / 3.78541f else null  // L/h → GPH
+
         _liveData.value = _liveData.value.copy(
-            soc          = updatedCustom["SOC"]       ?: _liveData.value.soc,
-            powerKw      = power                       ?: _liveData.value.powerKw,
-            speedMph     = speedMph                    ?: _liveData.value.speedMph,
-            rpm          = updatedCustom["RPM"]?.toInt() ?: _liveData.value.rpm,
-            hvVoltage    = updatedCustom["HV_V"]      ?: _liveData.value.hvVoltage,
-            hvCurrent    = updatedCustom["HV_I"]      ?: _liveData.value.hvCurrent,
-            battTempMaxC = updatedCustom["BATT_T_MAX"] ?: _liveData.value.battTempMaxC,
-            battTempMinC = updatedCustom["BATT_T_MIN"] ?: _liveData.value.battTempMinC,
-            engineLoad   = updatedCustom["LOAD"]      ?: _liveData.value.engineLoad,
-            customPids   = updatedCustom
+            soc              = updatedCustom["SOC"]        ?: _liveData.value.soc,
+            powerKw          = power                        ?: _liveData.value.powerKw,
+            speedMph         = speedMph                     ?: _liveData.value.speedMph,
+            rpm              = updatedCustom["RPM"]?.toInt() ?: _liveData.value.rpm,
+            hvVoltage        = updatedCustom["HV_V"]       ?: _liveData.value.hvVoltage,
+            hvCurrent        = updatedCustom["HV_I"]       ?: _liveData.value.hvCurrent,
+            battTempMaxC     = updatedCustom["BATT_T_MAX"] ?: _liveData.value.battTempMaxC,
+            battTempMinC     = updatedCustom["BATT_T_MIN"] ?: _liveData.value.battTempMinC,
+            engineLoad       = updatedCustom["LOAD"]       ?: _liveData.value.engineLoad,
+            fuelRateGph      = fuelRateGph                 ?: _liveData.value.fuelRateGph,
+            boostPressurePsi = updatedCustom["BOOST_PSI"] ?: _liveData.value.boostPressurePsi,
+            customPids       = updatedCustom
         )
+
+        // Powertrain-aware efficiency computation
+        val latestSpeed = _liveData.value.speedMph ?: 0f
+        val latestPower = _liveData.value.powerKw  ?: 0f
+        when (vehicleProfile.powertrain) {
+            PowertrainType.EV, PowertrainType.PHEV -> {
+                val raw = ObdParser.calculateEfficiency(latestSpeed, latestPower)
+                if (raw > 0f) addEfficiencySample(raw)
+                _liveData.value = _liveData.value.copy(instantMiPerKwh = smoothedInstantEfficiency())
+            }
+            PowertrainType.ICE_GAS, PowertrainType.ICE_DIESEL -> {
+                val fuel = _liveData.value.fuelRateGph
+                _liveData.value = _liveData.value.copy(
+                    instantMpg = if (fuel != null && fuel > 0.01f) latestSpeed / fuel else null
+                )
+            }
+            else -> {}
+        }
 
         // Auto-start trip when speed exceeds 3 mph and no active trip is running
         val currentSpeed = _liveData.value.speedMph ?: 0f
@@ -191,13 +230,30 @@ class OBD2Repository @Inject constructor(
 
         val currentPower = _liveData.value.powerKw ?: 0f
         val currentSpeed = _liveData.value.speedMph ?: 0f
+        val currentFuelRate = _liveData.value.fuelRateGph ?: 0f
 
         accumulatedEnergyKwh += (currentPower * dtSeconds) / 3600f
         accumulatedDistanceMiles += (currentSpeed * dtSeconds) / 3600f
+        accumulatedFuelGallons += (currentFuelRate * dtSeconds) / 3600f
         lastStatsUpdateTime = now
 
-        _liveData.value = _liveData.value.copy(
-            tripEnergyKwh    = accumulatedEnergyKwh,
+        val averageUpdates = when (vehicleProfile.powertrain) {
+            PowertrainType.EV, PowertrainType.PHEV ->
+                if (accumulatedEnergyKwh > 0.01f)
+                    _liveData.value.copy(averageMiPerKwh = accumulatedDistanceMiles / accumulatedEnergyKwh)
+                else _liveData.value
+            PowertrainType.ICE_GAS, PowertrainType.ICE_DIESEL ->
+                if (accumulatedFuelGallons > 0.001f)
+                    _liveData.value.copy(
+                        averageMpg       = accumulatedDistanceMiles / accumulatedFuelGallons,
+                        totalFuelGallons = accumulatedFuelGallons
+                    )
+                else _liveData.value
+            else -> _liveData.value
+        }
+
+        _liveData.value = averageUpdates.copy(
+            tripEnergyKwh     = accumulatedEnergyKwh,
             tripDistanceMiles = accumulatedDistanceMiles
         )
 
@@ -214,21 +270,29 @@ class OBD2Repository @Inject constructor(
         var currentSoc = 85.0f
         var demoPower = 0f
         var demoSpeed = 45f
+        var demoInstant = 3.5f
+        var demoAverage = 3.8f
+        vehicleProfile = profileManager.getActiveProfile()
 
         while (coroutineContext.isActive) {
             currentSoc -= 0.01f
             if (currentSoc < 0) currentSoc = 100f
             demoPower = (demoPower + Random.nextFloat() * 10f - 5f).coerceIn(-30f, 80f)
             demoSpeed = (demoSpeed + Random.nextFloat() * 4f - 2f).coerceIn(0f, 80f)
+            demoInstant = (demoInstant + Random.nextFloat() * 0.4f - 0.2f).coerceIn(1f, 8f)
+            demoAverage = (demoAverage + Random.nextFloat() * 0.02f - 0.01f).coerceIn(2f, 6f)
 
             _liveData.value = _liveData.value.copy(
-                soc              = currentSoc,
-                powerKw          = demoPower,
-                speedMph         = demoSpeed,
-                hvVoltage        = 380f + Random.nextFloat() * 20f,
-                hvCurrent        = demoPower * 1000f / 390f,
-                connectionState  = ConnectionState.Connected,
-                currentSongTitle = "Demo Mode Active",
+                soc               = currentSoc,
+                powerKw           = demoPower,
+                speedMph          = demoSpeed,
+                hvVoltage         = 380f + Random.nextFloat() * 20f,
+                hvCurrent         = demoPower * 1000f / 390f,
+                instantMiPerKwh   = demoInstant,
+                averageMiPerKwh   = demoAverage,
+                connectionState   = ConnectionState.Connected,
+                vehicleProfile    = vehicleProfile,
+                currentSongTitle  = "Demo Mode Active",
                 currentSongArtist = "Vakt UI Test"
             )
             delay(2000)

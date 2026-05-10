@@ -28,6 +28,9 @@ data class VaktLiveData(
     val engineLoad: Float? = null,        // %
     val boostPressurePsi: Float? = null,  // PSI
     val fuelRateGph: Float? = null,       // Gallons per hour
+    val instantMpg: Float? = null,        // ICE: speedMph / fuelRateGph
+    val averageMpg: Float? = null,        // ICE: tripDistanceMiles / totalFuelGallons
+    val totalFuelGallons: Float? = null,  // ICE trip accumulator
     val coolantTempC: Float? = null,
     
     // Media Info (Proxy from system)

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_connect"
+        android:icon="@drawable/ic_bluetooth_24"
+        android:title="Connect"
+        android:visible="true" />
+    <item
+        android:id="@+id/nav_disconnect"
+        android:icon="@drawable/ic_bluetooth_disabled_24"
+        android:title="Disconnect"
+        android:visible="false" />
+    <item
+        android:id="@+id/nav_stop_trip"
+        android:icon="@drawable/ic_stop_24"
+        android:title="Stop Trip" />
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@drawable/ic_settings_24"
+        android:title="Settings" />
+    <item
+        android:id="@+id/nav_history"
+        android:icon="@drawable/ic_history_24"
+        android:title="History" />
+    <item
+        android:id="@+id/nav_demo"
+        android:icon="@drawable/ic_science_24"
+        android:title="Demo Mode"
+        android:visible="false" />
+</menu>

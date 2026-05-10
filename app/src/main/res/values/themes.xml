@@ -8,7 +8,9 @@
         <!-- Secondary brand color. -->
         <item name="colorSecondary">#B0BEC5</item>
         <item name="colorOnSecondary">#000000</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">#121212</item>
+        <!-- Transparent system bars — full-bleed canvas -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 </resources>

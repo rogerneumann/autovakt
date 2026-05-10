@@ -61,6 +61,24 @@
       "units": "%",
       "minValue": 0,
       "maxValue": 100
+    },
+    {
+      "name": "Fuel Rate",
+      "shortName": "FUEL_RATE",
+      "modeAndPid": "015E",
+      "equation": "(A*256+B)/20",
+      "units": "L/h",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Boost Pressure",
+      "shortName": "BOOST_PSI",
+      "modeAndPid": "010B",
+      "equation": "A*0.14504",
+      "units": "PSI",
+      "minValue": -15,
+      "maxValue": 30
     }
   ]
 }
