@@ -57,8 +57,12 @@ class DashboardScreen(
     override fun onGetTemplate(): Template {
         return layoutManager.buildTemplate(
             data       = lastData,
-            onNewTrip  = { /* TODO Phase 6: repository.startNewTrip() */ },
-            onCycleView = { invalidate() } // force a re-render + future metric cycle
+            onNewTrip  = {
+                lifecycleScope.launch {
+                    repository.startManualTrip()
+                }
+            },
+            onCycleView = { invalidate() }
         )
     }
 

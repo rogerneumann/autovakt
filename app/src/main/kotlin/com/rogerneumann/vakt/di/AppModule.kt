@@ -35,7 +35,5 @@ object AppModule {
     }
 
     @Provides
-    fun provideTripDao(db: VaktDatabase): TripDao {
-        return db.tripDao()
-    }
+    fun provideTripDao(db: VaktDatabase): TripDao = db.tripDao()
 }

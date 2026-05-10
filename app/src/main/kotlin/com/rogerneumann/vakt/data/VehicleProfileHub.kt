@@ -54,13 +54,19 @@ class VehicleProfileHub @Inject constructor(
 
     private fun parseProfile(jsonString: String): VehicleProfile {
         val json = JSONObject(jsonString)
-        val pidsJson = json.optJSONArray("pids")
-        val customPids = mutableListOf<CustomPid>()
 
-        if (pidsJson != null) {
+        val customPids = buildList {
+            val pidsJson = json.optJSONArray("pids") ?: return@buildList
             for (i in 0 until pidsJson.length()) {
                 val p = pidsJson.getJSONObject(i)
-                customPids.add(CustomPid(
+                val nonLinearMap = buildList mapPoints@{
+                    val mapJson = p.optJSONArray("nonLinearMap") ?: return@mapPoints
+                    for (j in 0 until mapJson.length()) {
+                        val pt = mapJson.getJSONArray(j)
+                        add(pt.getDouble(0).toFloat() to pt.getDouble(1).toFloat())
+                    }
+                }
+                add(CustomPid(
                     name = p.getString("name"),
                     shortName = p.getString("shortName"),
                     modeAndPid = p.getString("modeAndPid"),
@@ -68,9 +74,20 @@ class VehicleProfileHub @Inject constructor(
                     minValue = p.optDouble("minValue", 0.0).toFloat(),
                     maxValue = p.optDouble("maxValue", 100.0).toFloat(),
                     units = p.optString("units", ""),
-                    header = p.optString("header", null)
+                    header = p.optString("header").takeIf { it.isNotEmpty() },
+                    nonLinearMap = nonLinearMap
                 ))
             }
+        }
+
+        val initCommands = buildList {
+            val arr = json.optJSONArray("initCommands") ?: return@buildList
+            for (i in 0 until arr.length()) add(arr.getString(i))
+        }
+
+        val vinPatterns = buildList {
+            val arr = json.optJSONArray("vinPatterns") ?: return@buildList
+            for (i in 0 until arr.length()) add(arr.getString(i))
         }
 
         return VehicleProfile(
@@ -80,7 +97,14 @@ class VehicleProfileHub @Inject constructor(
             year = json.optInt("year"),
             region = json.optString("region"),
             powertrain = PowertrainType.valueOf(json.optString("powertrain", "UNKNOWN")),
-            customPids = customPids
+            customPids = customPids,
+            initCommands = initCommands,
+            vinPatterns = vinPatterns
         )
     }
+
+    fun findProfileByVin(vin: String): List<VehicleProfile> =
+        profiles.values.filter { profile ->
+            profile.vinPatterns.any { pattern -> vin.startsWith(pattern, ignoreCase = true) }
+        }
 }

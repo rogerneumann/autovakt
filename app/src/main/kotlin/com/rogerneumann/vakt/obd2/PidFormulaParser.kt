@@ -10,25 +10,40 @@ import kotlin.math.pow
 object PidFormulaParser {
 
     /**
-     * Evaluates the given [equation] using the provided [bytes].
-     * @param bytes The data bytes returned by the ELM327 (A = bytes[0], B = bytes[1], etc.)
+     * Evaluates [equation] against [bytes] then optionally applies piecewise linear
+     * calibration via [nonLinearMap] (sorted list of raw→display pairs).
      */
-    fun evaluate(equation: String, bytes: ByteArray): Float {
+    fun evaluate(
+        equation: String,
+        bytes: ByteArray,
+        nonLinearMap: List<Pair<Float, Float>> = emptyList()
+    ): Float {
         var expr = equation.uppercase().replace(" ", "")
-        
-        // Substitute variables A, B, C... with their numeric values
         for (i in bytes.indices) {
-            val char = ('A' + i).toString()
+            val varName = ('A' + i).toString()
             val value = (bytes[i].toInt() and 0xFF).toString()
-            // Use regex to replace only whole word variables (not inside other words, though here it's simple)
-            expr = expr.replace(Regex("(?<![A-Z])$char(?![A-Z])"), value)
+            expr = expr.replace(Regex("(?<![A-Z])$varName(?![A-Z])"), value)
         }
 
-        return try {
+        val raw = try {
             SimpleExpressionEvaluator.eval(expr).toFloat()
         } catch (e: Exception) {
-            0f
+            return 0f
         }
+
+        if (nonLinearMap.size < 2) return raw
+        return piecewiseLinear(raw, nonLinearMap)
+    }
+
+    private fun piecewiseLinear(x: Float, map: List<Pair<Float, Float>>): Float {
+        val sorted = map.sortedBy { it.first }
+        if (x <= sorted.first().first) return sorted.first().second
+        if (x >= sorted.last().first) return sorted.last().second
+        val hi = sorted.indexOfFirst { it.first >= x }
+        val lo = hi - 1
+        val (x0, y0) = sorted[lo]
+        val (x1, y1) = sorted[hi]
+        return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
     }
 }
 

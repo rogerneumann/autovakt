@@ -7,10 +7,11 @@ package com.rogerneumann.vakt.data
 data class CustomPid(
     val name: String,
     val shortName: String,
-    val modeAndPid: String, // e.g., "2202BC"
-    val equation: String,   // e.g., "(A*256+B)/512"
+    val modeAndPid: String,
+    val equation: String,
     val minValue: Float = 0f,
     val maxValue: Float = 100f,
     val units: String = "",
-    val header: String? = null // e.g., "7E4"
+    val header: String? = null,
+    val nonLinearMap: List<Pair<Float, Float>> = emptyList() // (rawValue, displayValue) calibration points
 )

@@ -1,0 +1,61 @@
+{
+  "id": "nissan_leaf_gen2",
+  "make": "Nissan",
+  "model": "Leaf",
+  "year": 2018,
+  "region": "US",
+  "powertrain": "EV",
+  "initCommands": ["ATH1", "ATCAF0", "ATSP6"],
+  "vinPatterns": ["1N4AZ", "JN1AZ"],
+  "pids": [
+    {
+      "name": "State of Charge",
+      "shortName": "SOC",
+      "modeAndPid": "220102",
+      "equation": "A/2",
+      "header": "79B",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "GID Count",
+      "shortName": "GID",
+      "modeAndPid": "220103",
+      "equation": "A*256+B",
+      "header": "79B",
+      "units": "GID",
+      "minValue": 0,
+      "maxValue": 296
+    },
+    {
+      "name": "Battery Temperature",
+      "shortName": "BATT_T",
+      "modeAndPid": "220104",
+      "equation": "(A*256+B)/100-50",
+      "header": "79B",
+      "units": "°C",
+      "minValue": -50,
+      "maxValue": 100
+    },
+    {
+      "name": "HV Battery Voltage",
+      "shortName": "HV_V",
+      "modeAndPid": "220101",
+      "equation": "(A*256+B)/100",
+      "header": "79B",
+      "units": "V",
+      "minValue": 0,
+      "maxValue": 500
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    }
+  ]
+}

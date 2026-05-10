@@ -22,7 +22,9 @@ data class VehicleProfile(
     val model: String? = null,
     val year: Int? = null,
     val region: String? = null,
-    val customPids: List<CustomPid> = emptyList()
+    val customPids: List<CustomPid> = emptyList(),
+    val initCommands: List<String> = emptyList(), // AT commands sent after ATZ+ATE0
+    val vinPatterns: List<String> = emptyList()   // VIN prefix strings for auto-matching
 ) {
     companion object {
         val DEFAULT = VehicleProfile(id = "default", powertrain = PowertrainType.UNKNOWN)

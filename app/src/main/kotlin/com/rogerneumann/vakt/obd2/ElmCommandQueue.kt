@@ -2,27 +2,19 @@ package com.rogerneumann.vakt.obd2
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Ensures commands are sent sequentially to the ELM327.
- * Manages the polling loop and command timeouts.
- */
 @Singleton
 class ElmCommandQueue @Inject constructor(
-    private val transport: ElmBluetoothTransport
+    private val transport: TransportDelegate
 ) {
     private val commandChannel = Channel<CommandRequest>(Channel.UNLIMITED)
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    
-    private val _isPolling = MutableStateFlow(false)
-    val isPolling: StateFlow<Boolean> = _isPolling
 
-    private val _rawTraffic = kotlinx.coroutines.flow.MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 64)
+    private val _rawTraffic = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 64)
     val rawTraffic = _rawTraffic.asSharedFlow()
 
     init {

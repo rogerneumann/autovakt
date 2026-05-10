@@ -5,30 +5,70 @@
   "year": 2023,
   "region": "US",
   "powertrain": "EV",
+  "initCommands": ["ATH1", "ATCAF0", "ATAL", "ATSP6"],
+  "vinPatterns": ["1G1FZ", "1G1FY"],
   "pids": [
     {
       "name": "State of Charge",
       "shortName": "SOC",
       "modeAndPid": "2202BC",
-      "equation": "A*100/255",
+      "equation": "(A*256+B)/512",
       "header": "7E4",
-      "units": "%"
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100,
+      "nonLinearMap": [
+        [9, 0], [18, 10], [27, 20], [44, 40], [61, 60], [79, 80], [96.5, 100]
+      ]
     },
     {
-      "name": "High Voltage",
+      "name": "HV Battery Voltage",
       "shortName": "HV_V",
       "modeAndPid": "2202BD",
-      "equation": "(A*256+B)/10",
+      "equation": "(A*256+B)*0.0625",
       "header": "7E4",
-      "units": "V"
+      "units": "V",
+      "minValue": 0,
+      "maxValue": 450
     },
     {
-      "name": "High Current",
+      "name": "HV Battery Current",
       "shortName": "HV_I",
       "modeAndPid": "2202BE",
-      "equation": "((A*256+B)-32768)/10",
+      "equation": "(A*256+B-32768)*0.0625",
       "header": "7E4",
-      "units": "A"
+      "units": "A",
+      "minValue": -500,
+      "maxValue": 500
+    },
+    {
+      "name": "Battery Temp Max",
+      "shortName": "BATT_T_MAX",
+      "modeAndPid": "22434F",
+      "equation": "A-40",
+      "header": "7E4",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 100
+    },
+    {
+      "name": "Battery Temp Min",
+      "shortName": "BATT_T_MIN",
+      "modeAndPid": "224350",
+      "equation": "A-40",
+      "header": "7E4",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 100
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
     }
   ]
 }

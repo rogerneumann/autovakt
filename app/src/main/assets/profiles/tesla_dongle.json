@@ -1,0 +1,48 @@
+{
+  "id": "tesla_dongle",
+  "make": "Tesla",
+  "model": "Model 3/Y (OBD dongle)",
+  "year": 2020,
+  "region": "US",
+  "powertrain": "EV",
+  "initCommands": ["ATSP6"],
+  "vinPatterns": ["5YJ3E", "5YJSA", "5YJ3F"],
+  "pids": [
+    {
+      "name": "State of Charge",
+      "shortName": "SOC",
+      "modeAndPid": "0156",
+      "equation": "A*100/255",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Battery Power",
+      "shortName": "PWR",
+      "modeAndPid": "015B",
+      "equation": "(A*256+B-32768)/100",
+      "units": "kW",
+      "minValue": -100,
+      "maxValue": 300
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 300
+    },
+    {
+      "name": "Coolant Temperature",
+      "shortName": "COOLANT",
+      "modeAndPid": "0105",
+      "equation": "A-40",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 215
+    }
+  ]
+}

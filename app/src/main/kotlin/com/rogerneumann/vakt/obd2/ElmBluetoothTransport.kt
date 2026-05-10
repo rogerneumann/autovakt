@@ -24,7 +24,7 @@ import javax.inject.Singleton
 @Singleton
 class ElmBluetoothTransport @Inject constructor(
     private val bluetoothAdapter: BluetoothAdapter?
-) {
+) : OBD2Transport {
     private val SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     
     private var socket: BluetoothSocket? = null
@@ -38,9 +38,9 @@ class ElmBluetoothTransport @Inject constructor(
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
-    val connectionState: StateFlow<ConnectionState> = _connectionState
+    override val connectionState: StateFlow<ConnectionState> = _connectionState
 
-    suspend fun connect(deviceAddress: String) {
+    override suspend fun connect(deviceAddress: String) {
         if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
             _connectionState.value = ConnectionState.Error("Bluetooth is disabled")
             return
@@ -69,7 +69,7 @@ class ElmBluetoothTransport @Inject constructor(
         }
     }
 
-    suspend fun send(command: String) {
+    override suspend fun send(command: String) {
         withContext(Dispatchers.IO) {
             try {
                 val bytes = (command + "\r").toByteArray()
@@ -81,7 +81,7 @@ class ElmBluetoothTransport @Inject constructor(
         }
     }
 
-    suspend fun readResponse(): String {
+    override suspend fun readResponse(): String {
         return withContext(Dispatchers.IO) {
             val buffer = StringBuilder()
             val tempBuffer = ByteArray(1024)
@@ -136,7 +136,7 @@ class ElmBluetoothTransport @Inject constructor(
         }
     }
 
-    fun disconnect() {
+    override fun disconnect() {
         cleanup()
         _connectionState.value = ConnectionState.Disconnected
     }
