@@ -14,13 +14,17 @@ class GmProtocolHandler @Inject constructor(private val queue: ElmCommandQueue) 
 
     /**
      * Attempts to retrieve the 17-character VIN from the vehicle.
-     * Uses Mode 09 PID 02.
+     * Tries the GM ECM header (7E0) first; falls back to the ISO 15765-4
+     * functional broadcast address (7DF) which works on any OBD2 vehicle.
      */
     suspend fun discoverVin(): String? {
-        ensureHeader("7E0") // ECM header for VIN
-        val rawResponse = queue.execute("09 02", timeoutMs = 5000)
-        val hexString = reassembleMultiline(rawResponse)
-        return decodeVin(hexString)
+        ensureHeader("7E0")
+        val rawGm = queue.execute("09 02", timeoutMs = 5000)
+        decodeVin(reassembleMultiline(rawGm))?.let { return it }
+
+        ensureHeader("7DF")
+        val rawStd = queue.execute("09 02", timeoutMs = 5000)
+        return decodeVin(reassembleMultiline(rawStd))
     }
 
     /**

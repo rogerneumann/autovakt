@@ -20,6 +20,8 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.rogerneumann.vakt.R
 import com.rogerneumann.vakt.data.LightingManager
+import com.rogerneumann.vakt.data.VehicleProfileHub
+import com.rogerneumann.vakt.data.VehicleProfileManager
 import com.rogerneumann.vakt.databinding.ActivityMainBinding
 import com.rogerneumann.vakt.obd2.ConnectionState
 import com.rogerneumann.vakt.service.OBD2ForegroundService
@@ -38,6 +40,8 @@ class MainActivity : AppCompatActivity() {
 
     @Inject lateinit var sharedPreferences: SharedPreferences
     @Inject lateinit var lightingManager: LightingManager
+    @Inject lateinit var profileHub: VehicleProfileHub
+    @Inject lateinit var profileManager: VehicleProfileManager
 
     private var titleTapCount = 0
 
@@ -61,6 +65,7 @@ class MainActivity : AppCompatActivity() {
         setupHamburgerReveal()
         setupDemoEasterEgg()
         observeLiveData()
+        FirstRunWizardManager(this, sharedPreferences, profileHub, profileManager).showIfNeeded()
     }
 
     private fun setupImmersiveMode() {
