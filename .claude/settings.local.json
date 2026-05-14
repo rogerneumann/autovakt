@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(& \"$env:APPDATA\\\\Python\\\\Python311\\\\Scripts\\\\litellm.exe\" --model ollama/qwen3.5:latest --api_base http://10.0.1.96:11434 --port 4000 2>&1 | Select-Object -First 30)"
+      "PowerShell(& \"$env:APPDATA\\\\Python\\\\Python311\\\\Scripts\\\\litellm.exe\" --model ollama/qwen3.5:latest --api_base http://10.0.1.96:11434 --port 4000 2>&1 | Select-Object -First 30)",
+      "WebSearch",
+      "WebFetch(domain:developers.google.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.uinkits.com)"
     ]
   }
 }

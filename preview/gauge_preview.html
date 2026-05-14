@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vakt — Layout Preview</title>
+<style>
+/* ════════════════════════════════════════════════════════════════════════
+   TUNABLE VARIABLES — change & refresh to preview different looks
+   ════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* Brand colours */
+  --green:  #00E676;
+  --white:  #FFFFFF;
+  --gray:   #666;
+  --track:  #2A2A2A;
+  --cyan:   #00BCD4;
+  --yellow: #FFD600;
+  --red:    #F44336;
+  --orange: #FF9800;
+  --blue:   #40C4FF;
+
+  /* Tile grid */
+  --tile-radius: 12px;
+  --tile-gap:    12px;
+
+  /* Page */
+  --page-bg:  #080808;
+  --card-bg:  #141414;
+  --border:   #161616;
+  --text-dim: #333;
+}
+
+/* ════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--page-bg);
+  color: #888;
+  font: 13px/1.5 'Segoe UI', system-ui, sans-serif;
+  padding: 24px 28px 64px;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.header { margin-bottom: 28px; }
+.header h1 { color: var(--green); font-size: 22px; letter-spacing: -.3px; }
+.header p  { color: #444; font-size: 12px; margin-top: 4px; max-width: 680px; }
+.header kbd {
+  background: #111; border: 1px solid #2a2a2a; border-radius: 3px;
+  padding: 1px 6px; font-size: 11px; color: #666;
+}
+
+/* ── Sections ────────────────────────────────────────────────────────── */
+.section { margin-bottom: 40px; }
+.section-title {
+  font-size: 11px; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: #2e2e2e;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px; padding-bottom: 8px;
+  border-bottom: 1px solid #111;
+}
+.section-title span { color: var(--green); font-size: 13px; }
+.layout-badge {
+  background: #111; border: 1px solid #222; border-radius: 4px;
+  padding: 1px 8px; font-size: 10px; color: #444;
+}
+
+/* ── Pane rows ───────────────────────────────────────────────────────── */
+.row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.row + .row { margin-top: 16px; }
+
+.pane { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; }
+.pane-label {
+  font-size: 10px; color: #2a2a2a; letter-spacing: .12em;
+  text-transform: uppercase; margin-bottom: 5px;
+}
+canvas {
+  display: block;
+  border: 1px solid #1a1a1a;
+  border-radius: 8px;
+}
+.pane-hint { font-size: 10px; color: #222; margin-top: 4px; }
+
+/* ── Divider ─────────────────────────────────────────────────────────── */
+hr { border: none; border-top: 1px solid #111; margin: 40px 0; }
+
+/* ── Callout ─────────────────────────────────────────────────────────── */
+.callout {
+  background: #0e0e0e; border: 1px solid #1a1a1a; border-radius: 8px;
+  padding: 12px 16px; font-size: 12px; color: #3a3a3a;
+  margin-bottom: 16px; max-width: 860px;
+}
+.callout strong { color: #555; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Vakt — Layout Preview</h1>
+  <p>
+    Edit the JS <code>CFG</code> object or CSS <code>:root</code> variables, then refresh.
+    Swipe <kbd>←</kbd> = next pane &nbsp;·&nbsp; <kbd>→</kbd> = prev pane &nbsp;·&nbsp;
+    Pills: <kbd>G</kbd> gauges &nbsp;<kbd>S</kbd> split &nbsp;<kbd>M</kbd> media.
+  </p>
+</div>
+
+<!-- ═══ LAYOUT A — ARC ═════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span>A</span> Arc Gauge
+    <span class="layout-badge">current implementation</span>
+  </div>
+
+  <div class="row" id="arc-p"></div>   <!-- portrait  -->
+  <div class="row" id="arc-l"></div>   <!-- landscape -->
+</div>
+
+<hr>
+
+<!-- ═══ LAYOUT B — TILE GRID ══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span>B</span> Tile Grid
+    <span class="layout-badge">proposed alternative</span>
+  </div>
+
+  <div class="callout">
+    <strong>6 metric tiles</strong> in a 2×3 (portrait) or 3×2 (landscape) grid.
+    Each tile shows label → large value → unit → mini progress bar.
+    SOC tile spans full width in portrait for emphasis.
+    Swipe works identically — the same SPLIT and MEDIA panes apply.
+  </div>
+
+  <div class="row" id="grid-p"></div>
+  <div class="row" id="grid-l"></div>
+</div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════════════════════════
+// CFG — every tunable constant in one place
+// ════════════════════════════════════════════════════════════════════════
+const CFG = {
+  // ── Colors ────────────────────────────────────────────────────────────
+  bg:       '#000000',
+  cardBg:   '#141414',
+  tileBg:   '#101010',
+  green:    '#00E676',
+  white:    '#FFFFFF',
+  gray:     '#555555',
+  track:    '#2A2A2A',
+  cyan:     '#00BCD4',
+  yellow:   '#FFD600',
+  red:      '#F44336',
+  orange:   '#FF9800',
+  blue:     '#40C4FF',
+
+  // ── Arc gauge ─────────────────────────────────────────────────────────
+  arcFracP:   0.36,   // radius = min(gW,gH) * arcFracP  (portrait / square)
+  arcFracL:   0.28,   // radius = min(gW,gH) * arcFracL  (landscape)
+  arcCyFrac:  0.42,   // arcCy  = gH * arcCyFrac
+  barYFracP:  0.80,   // power bar Y = gH * barYFracP  (portrait)
+  barYFracL:  0.74,   // power bar Y = gH * barYFracL  (landscape — lower fraction keeps arc/bar clear)
+  barH:       34,     // bar height px (internal res)
+  metricXFrac:0.18,   // leftX = cx * metricXFrac
+  metricYFrac:0.30,   // metricY = arcCy - radius * metricYFrac
+
+  // ── Mode pills ────────────────────────────────────────────────────────
+  pillW:      38,
+  pillH:      22,
+  pillGap:    10,
+  pillBottom: 36,     // distance from bottom of full canvas
+
+  // ── Split fraction ────────────────────────────────────────────────────
+  splitFrac:  0.58,
+
+  // ── Tile grid ─────────────────────────────────────────────────────────
+  tileRadius: 10,
+  tileGap:    12,
+  tilePad:    14,
+};
+
+// ════════════════════════════════════════════════════════════════════════
+// DEMO DATA  (mirrors OBD2Repository demo loop)
+// ════════════════════════════════════════════════════════════════════════
+const DEMO = {
+  soc:        78,
+  powerKw:   -15,
+  instEff:    4.2,
+  avgEff:     3.8,
+  speedMph:   45,
+  battTempC:  28,
+  connected:  true,
+  songTitle:  'Bohemian Rhapsody',
+  songArtist: 'Queen',
+};
+
+// Tile definitions for Layout B
+const TILES = [
+  { label:'SOC',   value:`${DEMO.soc}`,       unit:'%',      accent:CFG.cyan,   barFrac:DEMO.soc/100,                      barColor:CFG.cyan   },
+  { label:'POWER', value:`${DEMO.powerKw}`,   unit:'kW',     accent:CFG.green,  barFrac:(DEMO.powerKw+150)/300,            barColor:CFG.green  },
+  { label:'SPEED', value:`${DEMO.speedMph}`,  unit:'mph',    accent:CFG.white,  barFrac:DEMO.speedMph/120,                 barColor:'#666'     },
+  { label:'INST',  value:DEMO.instEff.toFixed(1), unit:'mi/kWh', accent:CFG.yellow, barFrac:DEMO.instEff/6,              barColor:CFG.yellow },
+  { label:'AVG',   value:DEMO.avgEff.toFixed(1),  unit:'mi/kWh', accent:CFG.blue,   barFrac:DEMO.avgEff/6,              barColor:CFG.blue   },
+  { label:'TEMP',  value:`${DEMO.battTempC}`, unit:'°C max', accent:CFG.orange, barFrac:DEMO.battTempC/50,               barColor:CFG.orange },
+];
+
+// ════════════════════════════════════════════════════════════════════════
+// SHARED PRIMITIVES
+// ════════════════════════════════════════════════════════════════════════
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y,     x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x,     y + h, r);
+  ctx.arcTo(x,     y + h, x,     y,     r);
+  ctx.arcTo(x,     y,     x + r, y,     r);
+  ctx.closePath();
+}
+
+// Mode-indicator pills — always drawn on full canvas
+function drawPills(ctx, W, H, activeMode) {
+  const labels = ['G', 'S', 'M'], keys = ['GAUGES', 'SPLIT', 'MEDIA'];
+  const tot = labels.length * CFG.pillW + (labels.length - 1) * CFG.pillGap;
+  const sx  = W / 2 - tot / 2;
+  const py  = H - CFG.pillBottom;
+
+  labels.forEach((lbl, i) => {
+    const x = sx + i * (CFG.pillW + CFG.pillGap);
+    const active = keys[i] === activeMode;
+    ctx.fillStyle = active ? CFG.green : CFG.track;
+    rrect(ctx, x, py, CFG.pillW, CFG.pillH, 11);
+    ctx.fill();
+    ctx.fillStyle   = active ? '#000' : '#555';
+    ctx.textAlign   = 'center';
+    ctx.font        = 'bold 13px sans-serif';
+    ctx.fillText(lbl, x + CFG.pillW / 2, py + CFG.pillH * 0.74);
+  });
+}
+
+// Connection dot — top-right of the gauge area
+function drawDot(ctx, gW, connected) {
+  ctx.fillStyle = connected ? '#4CAF50' : CFG.red;
+  ctx.beginPath();
+  ctx.arc(gW - 40, 38, 8, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// Media card — fills left/top/right/bottom bounds
+function drawMediaCard(ctx, L, T, R, B, data) {
+  const cW = R - L, cH = B - T;
+  const cx = L + cW / 2, cy = T + cH / 2;
+  const ref = Math.min(cW, cH);
+
+  ctx.fillStyle = '#111111';
+  ctx.fillRect(L, T, cW, cH);
+
+  // Green divider at the seam
+  ctx.strokeStyle = CFG.green;
+  ctx.lineWidth   = 2;
+  ctx.beginPath();
+  if (cH > cW) {
+    ctx.moveTo(L + cW * .06, T + 1);
+    ctx.lineTo(R - cW * .06, T + 1);
+  } else {
+    ctx.moveTo(L + 1, T + cH * .08);
+    ctx.lineTo(L + 1, B - cH * .08);
+  }
+  ctx.stroke();
+
+  const has = !!data.songTitle;
+  ctx.textAlign = 'center';
+
+  // Note
+  ctx.globalAlpha = has ? 1 : .3;
+  ctx.fillStyle   = CFG.green;
+  ctx.font        = `bold ${clamp(ref * .18, 14, 52)}px sans-serif`;
+  ctx.fillText('♫', cx, cy - ref * .10);
+
+  // Title
+  ctx.globalAlpha = has ? 1 : .4;
+  ctx.fillStyle   = CFG.white;
+  ctx.font        = `bold ${clamp(ref * .11, 11, 28)}px sans-serif`;
+  ctx.fillText(has ? data.songTitle : 'No media playing', cx, cy + ref * .07);
+
+  // Artist
+  if (has && data.songArtist) {
+    ctx.globalAlpha = .65;
+    ctx.fillStyle   = '#888';
+    ctx.font        = `${clamp(ref * .08, 9, 20)}px sans-serif`;
+    ctx.fillText(data.songArtist, cx, cy + ref * .20);
+  }
+
+  ctx.globalAlpha = 1;
+}
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+// ════════════════════════════════════════════════════════════════════════
+// LAYOUT A — ARC GAUGE
+// ════════════════════════════════════════════════════════════════════════
+function drawArcGauge(ctx, gW, gH, data) {
+  const isL   = gW > gH;
+  const arcFrac = isL ? CFG.arcFracL : CFG.arcFracP;
+  const barYFrac= isL ? CFG.barYFracL : CFG.barYFracP;
+  const cx      = gW / 2;
+  const radius  = Math.min(gW, gH) * arcFrac;
+  const arcCy   = gH * CFG.arcCyFrac;
+
+  // ── Arc track + fill ──────────────────────────────────────────────────
+  const sw = radius * 0.095;
+  const sa = 135 * Math.PI / 180, sweep = 270 * Math.PI / 180;
+  ctx.lineCap     = 'round';
+  ctx.lineWidth   = sw;
+  ctx.strokeStyle = CFG.track;
+  ctx.beginPath(); ctx.arc(cx, arcCy, radius, sa, sa + sweep); ctx.stroke();
+
+  const frac  = data.soc / 100;
+  const color = data.soc > 20 ? CFG.cyan : data.soc > 10 ? CFG.yellow : CFG.red;
+  ctx.strokeStyle = color;
+  ctx.beginPath(); ctx.arc(cx, arcCy, radius, sa, sa + sweep * frac); ctx.stroke();
+
+  // ── Center value ──────────────────────────────────────────────────────
+  ctx.textAlign = 'center';
+  const vSize = clamp(radius * .46, 24, 90);
+  ctx.fillStyle = CFG.white;
+  ctx.font = `bold ${vSize}px sans-serif`;
+  ctx.fillText(`${data.soc}%`, cx, arcCy + vSize * .35);
+
+  const subSize = clamp(radius * .13, 10, 22);
+  ctx.fillStyle = 'rgba(255,255,255,.5)';
+  ctx.font = `bold ${subSize}px sans-serif`;
+  ctx.fillText('SOC', cx, arcCy + radius * .52);
+
+  // ── Side metrics ──────────────────────────────────────────────────────
+  const narrow = gW / gH < 1.4;
+  const mScale = narrow ? 0.72 : 0.88;
+  const metricY = arcCy - radius * CFG.metricYFrac;
+
+  // Clamp x so text stays inside gauge bounds with margin
+  const mMargin = gW * 0.04;
+  const lx = clamp(cx * CFG.metricXFrac, mMargin, gW / 2 - 20);
+  const rx = clamp(gW - lx, gW / 2 + 20, gW - mMargin);
+
+  drawSideMetric(ctx, lx, metricY, mScale, 'INST', data.instEff.toFixed(1), 'mi/kWh', 'left');
+  drawSideMetric(ctx, rx, metricY, mScale, 'AVG',  data.avgEff.toFixed(1),  'mi/kWh', 'right');
+
+  // ── Power bar — label INSIDE bar (prevents vertical overflow) ─────────
+  // Keep bar within gauge area: at least barH + pill clearance from bottom
+  const pillClear = CFG.pillH + CFG.pillBottom + 12;
+  const barMaxY   = gH - CFG.barH - pillClear;
+  const barY      = Math.min(gH * barYFrac, barMaxY);
+  const barW      = gW * 0.76;
+  const halfW     = barW / 2;
+
+  ctx.fillStyle = CFG.track;
+  ctx.fillRect(cx - halfW, barY, barW, CFG.barH);
+
+  const kw    = data.powerKw;
+  const ratio = clamp(kw / 150, -1, 1);
+  ctx.fillStyle = kw < 0 ? '#4CAF50' : kw > 100 ? CFG.red : CFG.yellow;
+  if (kw < 0) ctx.fillRect(cx + ratio * halfW, barY, -ratio * halfW, CFG.barH);
+  else        ctx.fillRect(cx,                 barY,  ratio * halfW, CFG.barH);
+
+  // Label inside bar — white with subtle shadow for legibility over any fill color
+  const lblSize = clamp(CFG.barH * .48, 11, 20);
+  ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 3;
+  ctx.fillStyle   = CFG.white;
+  ctx.textAlign   = 'center';
+  ctx.font        = `bold ${lblSize}px sans-serif`;
+  ctx.fillText(`${Math.round(kw)} kW`, cx, barY + CFG.barH * .69);
+  ctx.shadowBlur  = 0;
+}
+
+function drawSideMetric(ctx, x, y, scale, label, value, unit, align) {
+  ctx.textAlign = align;
+
+  const lS = clamp(13 * scale, 8, 18);
+  const vS = clamp(32 * scale, 14, 44);
+  const uS = clamp(11 * scale, 8, 15);
+
+  ctx.fillStyle = 'rgba(255,255,255,.4)';
+  ctx.font = `bold ${lS}px sans-serif`;
+  ctx.fillText(label, x, y);
+
+  ctx.fillStyle = CFG.white;
+  ctx.font = `bold ${vS}px sans-serif`;
+  ctx.fillText(value, x, y + vS * 1.25);
+
+  ctx.fillStyle = 'rgba(255,255,255,.5)';
+  ctx.font = `${uS}px sans-serif`;
+  ctx.fillText(unit, x, y + vS * 1.25 + uS * 1.4);
+
+  ctx.textAlign = 'center';
+}
+
+function renderArc(canvas, mode, isLandscape) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = CFG.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const gW = mode === 'GAUGES' ? W
+           : mode === 'SPLIT'  ? (isLandscape ? W * CFG.splitFrac : W)
+           : 0;
+  const gH = mode === 'GAUGES' ? H
+           : mode === 'SPLIT'  ? (isLandscape ? H : H * CFG.splitFrac)
+           : 0;
+
+  if (gW > 0 && gH > 0) {
+    drawArcGauge(ctx, gW, gH, DEMO);
+    drawDot(ctx, gW, DEMO.connected);
+  }
+
+  if (mode === 'SPLIT' || mode === 'MEDIA') {
+    const mL = (mode === 'SPLIT' && isLandscape)  ? gW : 0;
+    const mT = (mode === 'SPLIT' && !isLandscape) ? gH : 0;
+    drawMediaCard(ctx, mL, mT, W, H, DEMO);
+  }
+
+  drawPills(ctx, W, H, mode);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// LAYOUT B — TILE GRID
+// ════════════════════════════════════════════════════════════════════════
+function drawTile(ctx, x, y, w, h, tile) {
+  // Card
+  ctx.fillStyle = '#0f0f0f';
+  rrect(ctx, x, y, w, h, CFG.tileRadius);
+  ctx.fill();
+
+  // Accent bar (top)
+  ctx.fillStyle = tile.accent;
+  rrect(ctx, x, y, w, 4, 2);
+  ctx.fill();
+
+  const cx = x + w / 2;
+
+  // Label
+  const lSize = clamp(h * .10, 8, 13);
+  ctx.fillStyle = '#444';
+  ctx.textAlign = 'center';
+  ctx.font      = `${lSize}px sans-serif`;
+  ctx.fillText(tile.label, cx, y + h * .22);
+
+  // Value
+  const vSize = clamp(h * .30, 16, 52);
+  ctx.fillStyle = CFG.white;
+  ctx.font      = `bold ${vSize}px sans-serif`;
+  ctx.fillText(tile.value, cx, y + h * .57);
+
+  // Unit
+  const uSize = clamp(h * .09, 7, 12);
+  ctx.fillStyle = '#444';
+  ctx.font      = `${uSize}px sans-serif`;
+  ctx.fillText(tile.unit, cx, y + h * .71);
+
+  // Mini progress bar
+  const bpad = w * .10;
+  const bx   = x + bpad, bw = w - bpad * 2, bh = 4, by = y + h - 10 - bh;
+  ctx.fillStyle = CFG.track;
+  ctx.fillRect(bx, by, bw, bh);
+  ctx.fillStyle = tile.barColor;
+  ctx.fillRect(bx, by, bw * clamp(tile.barFrac, 0, 1), bh);
+}
+
+function drawTileGrid(ctx, gW, gH, tiles, mode) {
+  const isL  = gW > gH;
+  const COLS = isL ? 3 : 2;
+  const ROWS = Math.ceil(tiles.length / COLS);
+  const GAP  = CFG.tileGap;
+  const PAD  = CFG.tilePad;
+
+  // Reserve pill space only when they'd appear inside the gauge area
+  const needPillClear = (mode === 'GAUGES') || (mode === 'SPLIT' && isL);
+  const bottomRes = needPillClear ? (CFG.pillH + CFG.pillBottom + 10) : 8;
+
+  const availW = gW - PAD * 2;
+  const availH = gH - PAD * 2 - bottomRes;
+  const tW = Math.floor((availW - GAP * (COLS - 1)) / COLS);
+  const tH = Math.floor((availH - GAP * (ROWS - 1)) / ROWS);
+
+  // Center the grid
+  const gridW  = COLS * tW + (COLS - 1) * GAP;
+  const gridH  = ROWS * tH + (ROWS - 1) * GAP;
+  const startX = (gW - gridW) / 2;
+  const startY = PAD + (availH - gridH) / 2;
+
+  tiles.forEach((tile, i) => {
+    const col = i % COLS, row = Math.floor(i / COLS);
+    const tx  = startX + col * (tW + GAP);
+    const ty  = startY + row * (tH + GAP);
+    drawTile(ctx, tx, ty, tW, tH, tile);
+  });
+}
+
+function renderGrid(canvas, mode, isLandscape) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = CFG.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const gW = mode === 'GAUGES' ? W
+           : mode === 'SPLIT'  ? (isLandscape ? W * CFG.splitFrac : W)
+           : 0;
+  const gH = mode === 'GAUGES' ? H
+           : mode === 'SPLIT'  ? (isLandscape ? H : H * CFG.splitFrac)
+           : 0;
+
+  if (gW > 0 && gH > 0) {
+    drawTileGrid(ctx, gW, gH, TILES, mode);
+    drawDot(ctx, gW, DEMO.connected);
+  }
+
+  if (mode === 'SPLIT' || mode === 'MEDIA') {
+    const mL = (mode === 'SPLIT' && isLandscape)  ? gW : 0;
+    const mT = (mode === 'SPLIT' && !isLandscape) ? gH : 0;
+    drawMediaCard(ctx, mL, mT, W, H, DEMO);
+  }
+
+  drawPills(ctx, W, H, mode);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// PAGE BUILDER
+// ════════════════════════════════════════════════════════════════════════
+const MODES = [
+  { key: 'GAUGES', label: 'Gauges only'    },
+  { key: 'SPLIT',  label: 'Gauge + media'  },
+  { key: 'MEDIA',  label: 'Media only'     },
+];
+
+function buildRow(id, iW, iH, isLandscape, renderFn, displayW) {
+  const displayH = Math.round(displayW * iH / iW);
+  const row      = document.getElementById(id);
+
+  MODES.forEach(({ key, label }) => {
+    const pane   = document.createElement('div');
+    pane.className = 'pane';
+
+    const lbl    = document.createElement('div');
+    lbl.className = 'pane-label';
+    lbl.textContent = label;
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = iW;
+    canvas.height = iH;
+    canvas.style.width  = displayW + 'px';
+    canvas.style.height = displayH + 'px';
+
+    const hint   = document.createElement('div');
+    hint.className = 'pane-hint';
+    hint.textContent = key === 'GAUGES' ? 'swipe ←'
+                     : key === 'SPLIT'  ? '← or →'
+                     :                    'swipe →';
+
+    pane.append(lbl, canvas, hint);
+    row.append(pane);
+    renderFn(canvas, key, isLandscape);
+  });
+}
+
+// Internal canvas resolution  ·  display width
+//   Portrait:  360 × 720 internal,  displayed at 240 px wide
+//   Landscape: 720 × 360 internal,  displayed at 440 px wide
+buildRow('arc-p',  360, 720, false, renderArc,  240);
+buildRow('arc-l',  720, 360, true,  renderArc,  440);
+buildRow('grid-p', 360, 720, false, renderGrid, 240);
+buildRow('grid-l', 720, 360, true,  renderGrid, 440);
+</script>
+</body>
+</html>

@@ -66,11 +66,11 @@
         android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
+        android:background="#121212"
         android:fitsSystemWindows="true"
         app:menu="@menu/drawer_menu"
         app:headerLayout="@layout/nav_header_main"
-        app:itemTextColor="#FFFFFFFF"
-        app:itemIconTint="#00E676"
-        app:backgroundTint="#121212" />
+        app:itemTextColor="@color/nav_item_text"
+        app:itemIconTint="#00E676" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

@@ -13,8 +13,12 @@ class VehicleProfileManager @Inject constructor(
 ) {
     private val prefs: SharedPreferences = context.getSharedPreferences("vakt_prefs", Context.MODE_PRIVATE)
 
+    fun getActiveProfileId(): String =
+        prefs.getString("active_vehicle_id", "chevy_bolt_euv_2023") ?: "chevy_bolt_euv_2023"
+
     fun getActiveProfile(): VehicleProfile {
-        val id = prefs.getString("active_vehicle_id", "chevy_bolt_euv_2023") ?: "chevy_bolt_euv_2023"
+        val id = getActiveProfileId()
+        if (id == "auto") return VehicleProfile.DEFAULT
         return profileHub.getProfile(id) ?: VehicleProfile.DEFAULT
     }
 

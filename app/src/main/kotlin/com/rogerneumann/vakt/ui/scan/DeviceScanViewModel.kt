@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -156,17 +157,20 @@ class DeviceScanViewModel @Inject constructor(
             context.registerReceiver(discoveryReceiver, filter, Context.RECEIVER_EXPORTED)
             bluetoothAdapter?.startDiscovery()
         } catch (e: Exception) {
-            // Permission denied or Bluetooth not available
+            _scanState.value = _scanState.value.copy(error = "Classic scan failed: ${e.message}")
         }
     }
 
     private fun startBleScan() {
         if (!hasBluetoothPermissions()) return
 
+        val settings = ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+            .build()
         try {
-            bleScanner?.startScan(bleScanCallback)
+            bleScanner?.startScan(emptyList(), settings, bleScanCallback)
         } catch (e: Exception) {
-            // Permission denied or BLE not available
+            _scanState.value = _scanState.value.copy(error = "BLE scan failed: ${e.message}")
         }
     }
 
@@ -178,16 +182,12 @@ class DeviceScanViewModel @Inject constructor(
 
     private fun hasBluetoothPermissions(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.BLUETOOTH_SCAN
-            ) == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.BLUETOOTH_CONNECT
-            ) == PackageManager.PERMISSION_GRANTED
+            // API 31+: BLUETOOTH_SCAN (neverForLocation) + BLUETOOTH_CONNECT; no location needed
+            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
         } else {
-            true
+            // API 26–30: BLE scanning requires ACCESS_FINE_LOCATION
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         }
     }
 

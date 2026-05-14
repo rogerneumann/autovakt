@@ -18,6 +18,8 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import com.rogerneumann.vakt.R
+import com.rogerneumann.vakt.data.LightingManager
 import com.rogerneumann.vakt.databinding.ActivityMainBinding
 import com.rogerneumann.vakt.obd2.ConnectionState
 import com.rogerneumann.vakt.service.OBD2ForegroundService
@@ -27,7 +29,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.rogerneumann.vakt.R
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -35,8 +36,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainViewModel by viewModels()
 
-    @Inject
-    lateinit var sharedPreferences: SharedPreferences
+    @Inject lateinit var sharedPreferences: SharedPreferences
+    @Inject lateinit var lightingManager: LightingManager
 
     private var titleTapCount = 0
 
@@ -147,6 +148,11 @@ class MainActivity : AppCompatActivity() {
                 updateNavHeaderVehicle(data)
             }
         }
+        lifecycleScope.launch {
+            lightingManager.theme.collectLatest { theme ->
+                binding.dashboardView.theme = theme
+            }
+        }
     }
 
     private fun updateDrawerState(state: ConnectionState) {
@@ -201,8 +207,12 @@ class MainActivity : AppCompatActivity() {
     private fun requestRequiredPermissions() {
         val needed = buildList {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // API 31+: BLUETOOTH_SCAN declared neverForLocation — no location dialog needed
                 if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) add(Manifest.permission.BLUETOOTH_CONNECT)
                 if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) add(Manifest.permission.BLUETOOTH_SCAN)
+            } else {
+                // API 26–30: BLE/Classic scanning requires location permission
+                if (!hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) add(Manifest.permission.ACCESS_FINE_LOCATION)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 if (!hasPermission(Manifest.permission.POST_NOTIFICATIONS)) add(Manifest.permission.POST_NOTIFICATIONS)

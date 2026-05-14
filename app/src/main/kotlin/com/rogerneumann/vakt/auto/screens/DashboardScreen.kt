@@ -13,6 +13,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.rogerneumann.vakt.auto.MultiPaneLayoutManager
 import com.rogerneumann.vakt.auto.render.GaugeRenderer
+import com.rogerneumann.vakt.auto.render.GaugeTheme
+import com.rogerneumann.vakt.data.LightingManager
 import com.rogerneumann.vakt.data.OBD2Repository
 import com.rogerneumann.vakt.data.VaktLiveData
 import kotlinx.coroutines.flow.collectLatest
@@ -28,13 +30,15 @@ import kotlinx.coroutines.launch
  */
 class DashboardScreen(
     carContext: CarContext,
-    private val repository: OBD2Repository
+    private val repository: OBD2Repository,
+    private val lightingManager: LightingManager
 ) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
 
     private val renderer = GaugeRenderer()
     private val layoutManager = MultiPaneLayoutManager(carContext)
 
     private var lastData: VaktLiveData = VaktLiveData()
+    private var currentTheme: GaugeTheme = GaugeTheme.DARK
     private var currentSurfaceContainer: SurfaceContainer? = null
 
     init {
@@ -45,9 +49,14 @@ class DashboardScreen(
             repository.liveData.collectLatest { data ->
                 lastData = data
                 renderFrame()
-                // Refresh the template so action strip colors stay in sync
-                // with connection state changes (Connected → Error, etc.)
                 invalidate()
+            }
+        }
+
+        lifecycleScope.launch {
+            lightingManager.themeForAA.collectLatest { theme ->
+                currentTheme = theme
+                renderFrame()
             }
         }
     }
@@ -92,7 +101,7 @@ class DashboardScreen(
         if (!surface.isValid) return
         try {
             val canvas: Canvas = surface.lockCanvas(null)
-            renderer.draw(canvas, lastData)
+            renderer.draw(canvas, lastData, theme = currentTheme)
             surface.unlockCanvasAndPost(canvas)
         } catch (_: Exception) { /* surface may have been destroyed */ }
     }

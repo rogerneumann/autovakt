@@ -1,79 +1,290 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="24dp"
     android:background="#121212">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Settings"
-        android:textColor="#FFFFFF"
-        android:textSize="32sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="32dp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Select Vehicle Profile"
-        android:textColor="#B0BEC5"
-        android:layout_marginBottom="8dp" />
-
-    <Spinner
-        android:id="@+id/spinnerVehicle"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:backgroundTint="#FFFFFF"
-        android:layout_marginBottom="32dp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Unit System"
-        android:textColor="#B0BEC5"
-        android:layout_marginBottom="8dp" />
-
-    <RadioGroup
-        android:id="@+id/radioGroupUnits"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="48dp">
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <RadioButton
-            android:id="@+id/radioImperial"
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Imperial (mph, mi/kWh)"
+            android:text="Settings"
             android:textColor="#FFFFFF"
-            android:layout_marginEnd="16dp" />
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="32dp" />
 
-        <RadioButton
-            android:id="@+id/radioMetric"
+        <!-- Vehicle Profile -->
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Metric (km/h, Wh/km)"
-            android:textColor="#FFFFFF" />
-    </RadioGroup>
+            android:text="Select Vehicle Profile"
+            android:textColor="#B0BEC5"
+            android:layout_marginBottom="8dp" />
 
-    <Button
-        android:id="@+id/btnImportProfile"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="Import Profile"
-        android:backgroundTint="#FF9800"
-        android:textColor="#000000"
-        android:layout_marginBottom="12dp" />
+        <Spinner
+            android:id="@+id/spinnerVehicle"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:backgroundTint="#FFFFFF"
+            android:layout_marginBottom="32dp" />
 
-    <Button
-        android:id="@+id/btnSave"
-        android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:text="Save &amp; Close"
-        android:backgroundTint="#00E676"
-        android:textColor="#000000" />
+        <!-- Unit System -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Unit System"
+            android:textColor="#B0BEC5"
+            android:layout_marginBottom="8dp" />
 
-</LinearLayout>
+        <RadioGroup
+            android:id="@+id/radioGroupUnits"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="32dp">
+
+            <RadioButton
+                android:id="@+id/radioImperial"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Imperial (mph, mi/kWh)"
+                android:textColor="#FFFFFF"
+                android:layout_marginEnd="16dp" />
+
+            <RadioButton
+                android:id="@+id/radioMetric"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Metric (km/h, Wh/km)"
+                android:textColor="#FFFFFF" />
+        </RadioGroup>
+
+        <!-- ── Display Theme ───────────────────────────────────────────────── -->
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#2A2A2A"
+            android:layout_marginBottom="24dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Display Theme"
+            android:textColor="#B0BEC5"
+            android:layout_marginBottom="12dp" />
+
+        <RadioGroup
+            android:id="@+id/radioGroupTheme"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <RadioButton
+                android:id="@+id/radioThemeDark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dark"
+                android:textColor="#FFFFFF"
+                android:layout_marginEnd="16dp"
+                android:checked="true" />
+
+            <RadioButton
+                android:id="@+id/radioThemeLight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Light"
+                android:textColor="#FFFFFF"
+                android:layout_marginEnd="16dp" />
+
+            <RadioButton
+                android:id="@+id/radioThemeAuto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Auto"
+                android:textColor="#FFFFFF" />
+        </RadioGroup>
+
+        <!-- Auto sub-section (visible only when Auto selected) -->
+        <LinearLayout
+            android:id="@+id/sectionAutoTheme"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Auto mode"
+                android:textColor="#B0BEC5"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp" />
+
+            <RadioGroup
+                android:id="@+id/radioGroupAutoMode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/radioAutoTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Time of Day"
+                    android:textColor="#FFFFFF"
+                    android:checked="true" />
+
+                <RadioButton
+                    android:id="@+id/radioAutoSensor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ambient Light Sensor"
+                    android:textColor="#FFFFFF" />
+
+                <RadioButton
+                    android:id="@+id/radioAutoBest"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Best (Location + Sensor)"
+                    android:textColor="#FFFFFF" />
+            </RadioGroup>
+        </LinearLayout>
+
+        <!-- Time section (visible when Time or Best selected) -->
+        <LinearLayout
+            android:id="@+id/sectionTimeTheme"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#1A1A1A"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="12dp"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Day Hours"
+                android:textColor="#B0BEC5"
+                android:textSize="13sp"
+                android:layout_marginBottom="4dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="4dp">
+
+                <TextView
+                    android:id="@+id/tvDawnTime"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="6:00 AM"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvDuskTime"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="8:00 PM"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <com.google.android.material.slider.RangeSlider
+                android:id="@+id/sliderDawnDusk"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="0"
+                android:valueTo="24"
+                android:stepSize="0.5"
+                app:thumbRadius="12dp"
+                app:trackColorActive="#00E676"
+                app:trackColorInactive="#3A3A3A"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchUseLocation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Use GPS for sunrise/sunset"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <!-- Sensor section (visible when Sensor or Best selected) -->
+        <LinearLayout
+            android:id="@+id/sectionSensorTheme"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#1A1A1A"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="12dp"
+            android:layout_marginBottom="24dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvLuxValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Switch to light above: 5000 lux"
+                android:textColor="#B0BEC5"
+                android:textSize="13sp"
+                android:layout_marginBottom="4dp" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/sliderLuxThreshold"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="500"
+                android:valueTo="20000"
+                android:stepSize="500"
+                app:trackColorActive="#00E676"
+                app:trackColorInactive="#3A3A3A" />
+        </LinearLayout>
+
+        <!-- ──────────────────────────────────────────────────────────────── -->
+
+        <Button
+            android:id="@+id/btnImportProfile"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Import Profile"
+            android:backgroundTint="#FF9800"
+            android:textColor="#000000"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:text="Save &amp; Close"
+            android:backgroundTint="#00E676"
+            android:textColor="#000000" />
+
+    </LinearLayout>
+</ScrollView>
