@@ -1,6 +1,7 @@
 package com.rogerneumann.vakt.ui.scan
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.BluetoothLeScanner
@@ -58,6 +59,7 @@ class DeviceScanViewModel @Inject constructor(
 
     // Broadcast receiver for Classic Bluetooth discovery
     private val discoveryReceiver = object : BroadcastReceiver() {
+        @SuppressLint("MissingPermission")
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 BluetoothDevice.ACTION_FOUND -> {
@@ -89,6 +91,7 @@ class DeviceScanViewModel @Inject constructor(
 
     // Scan callback for BLE
     private val bleScanCallback = object : ScanCallback() {
+        @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             result?.let {
                 val address = it.device.address
@@ -112,6 +115,7 @@ class DeviceScanViewModel @Inject constructor(
         }
     }
 
+    @SuppressLint("MissingPermission")
     fun startScan() {
         if (!hasBluetoothPermissions()) {
             _scanState.value = _scanState.value.copy(
@@ -139,6 +143,7 @@ class DeviceScanViewModel @Inject constructor(
         }
     }
 
+    @SuppressLint("MissingPermission")
     fun stopScan() {
         try {
             bluetoothAdapter?.cancelDiscovery()
@@ -153,6 +158,7 @@ class DeviceScanViewModel @Inject constructor(
         }
     }
 
+    @SuppressLint("MissingPermission")
     private fun startClassicDiscovery() {
         if (!hasBluetoothPermissions()) return
 
@@ -166,6 +172,7 @@ class DeviceScanViewModel @Inject constructor(
         }
     }
 
+    @SuppressLint("MissingPermission")
     private fun startBleScan() {
         if (!hasBluetoothPermissions()) return
 
