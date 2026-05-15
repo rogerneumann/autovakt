@@ -1,53 +1,154 @@
 package com.rogerneumann.vakt.ui
 
+import android.Manifest
+import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.core.content.PermissionChecker
 import androidx.fragment.app.FragmentActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.rogerneumann.vakt.data.VehicleProfileHub
 import com.rogerneumann.vakt.data.VehicleProfileManager
 import com.rogerneumann.vakt.ui.scan.DeviceScanFragment
 
+/**
+ * Manages the first-run wizard flow (Block 14d).
+ *
+ * 3-step flow:
+ *   Step 1 — Bluetooth permissions (non-skippable)
+ *   Step 2 — Notification access (skippable)
+ *   Step 3 — Connect OBD adapter (skippable)
+ *
+ * [onWizardSkipped] is called when the user skips step 3 without pairing a device,
+ * so that MainActivity can start the hamburger pulse animation.
+ */
 class FirstRunWizardManager(
     private val activity: FragmentActivity,
     private val prefs: SharedPreferences,
     private val profileHub: VehicleProfileHub,
-    private val profileManager: VehicleProfileManager
+    private val profileManager: VehicleProfileManager,
+    private val onWizardSkipped: () -> Unit = {}
 ) {
+    private var permissionLauncher: ActivityResultLauncher<Array<String>>? = null
+
     fun showIfNeeded() {
         if (prefs.contains("saved_device_address")) return
-        showProfileStep()
+        registerPermissionLauncher()
+        showBluetoothStep()
     }
 
-    private fun showProfileStep() {
-        val profiles = profileHub.getAvailableProfiles()
-        val labels = (listOf("Auto (VIN detection)") +
-                profiles.map { "${it.make} ${it.model} (${it.year})" }).toTypedArray()
-        var selectedIndex = 0
+    /** Register before onStart — must be called during onCreate before show. */
+    private fun registerPermissionLauncher() {
+        permissionLauncher = activity.registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { results ->
+            val allGranted = results.values.all { it }
+            if (allGranted) {
+                showNotificationStep()
+            } else {
+                showBluetoothDeniedDialog()
+            }
+        }
+    }
+
+    // ── Step 1: Bluetooth permissions (non-skippable) ─────────────────────────
+
+    private fun showBluetoothStep() {
+        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
+        } else {
+            arrayOf(
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
+        }
+
+        val explanation = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            "Android requires location permission to scan for Bluetooth devices. " +
+                "Vakt does not store your location.\n\n" +
+                "Bluetooth access is also required to connect your OBD adapter."
+        } else {
+            "Bluetooth access is required to connect your OBD adapter."
+        }
+
+        // Check if all permissions already granted
+        val allGranted = permissions.all { perm ->
+            ContextCompat.checkSelfPermission(activity, perm) == PermissionChecker.PERMISSION_GRANTED
+        }
+        if (allGranted) {
+            showNotificationStep()
+            return
+        }
 
         MaterialAlertDialogBuilder(activity)
             .setTitle("Welcome to Vakt")
-            .setSingleChoiceItems(labels, 0) { _, which -> selectedIndex = which }
-            .setPositiveButton("Next") { _, _ ->
-                if (selectedIndex == 0) {
-                    profileManager.setActiveProfile("auto")
-                } else {
-                    profileManager.setActiveProfile(profiles[selectedIndex - 1].id)
-                }
-                showScanStep()
+            .setMessage(explanation)
+            .setPositiveButton("Grant permissions") { _, _ ->
+                permissionLauncher?.launch(permissions)
             }
-            .setNegativeButton("Skip", null)
             .setCancelable(false)
             .show()
     }
 
-    private fun showScanStep() {
+    private fun showBluetoothDeniedDialog() {
         MaterialAlertDialogBuilder(activity)
-            .setTitle("Connect OBD Adapter")
-            .setMessage("Tap Scan to find your OBD-II Bluetooth adapter. You can also connect later from the menu.")
-            .setPositiveButton("Scan for Devices") { _, _ ->
+            .setTitle("Bluetooth Required")
+            .setMessage(
+                "Bluetooth is required to connect your OBD adapter. " +
+                "Please grant the permission in Settings."
+            )
+            .setPositiveButton("Open Settings") { _, _ ->
+                activity.startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = android.net.Uri.fromParts("package", activity.packageName, null)
+                    }
+                )
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    // ── Step 2: Notification access (skippable) ───────────────────────────────
+
+    private fun showNotificationStep() {
+        MaterialAlertDialogBuilder(activity)
+            .setTitle("Show What's Playing")
+            .setMessage(
+                "To show what's playing in your media views, allow Notification Access."
+            )
+            .setPositiveButton("Allow") { _, _ ->
+                activity.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                showAdapterStep()
+            }
+            .setNegativeButton("Skip for now") { _, _ ->
+                showAdapterStep()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    // ── Step 3: Connect OBD adapter (skippable) ───────────────────────────────
+
+    private fun showAdapterStep() {
+        MaterialAlertDialogBuilder(activity)
+            .setTitle("Connect Your OBD Adapter")
+            .setMessage(
+                "Connect your OBD2 adapter to get started.\n\n" +
+                "We recommend the OBDLink CX (BLE) or MX+ (Bluetooth Classic)."
+            )
+            .setPositiveButton("Scan for adapters") { _, _ ->
                 DeviceScanFragment().show(activity.supportFragmentManager, "device_scan")
             }
-            .setNegativeButton("Skip", null)
+            .setNegativeButton("Skip for now") { _, _ ->
+                // Wizard skipped — notify MainActivity to start hamburger pulse
+                onWizardSkipped()
+            }
+            .setCancelable(false)
             .show()
     }
 }
