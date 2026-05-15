@@ -66,6 +66,124 @@
                 android:textColor="#FFFFFF" />
         </RadioGroup>
 
+        <!-- ── Dashboard Layout ───────────────────────────────────────────── -->
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="#2A2A2A" android:layout_marginBottom="24dp" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Dashboard Layout" android:textColor="#B0BEC5"
+            android:layout_marginBottom="12dp" />
+
+        <RadioGroup android:id="@+id/radioGroupLayout"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:layout_marginBottom="8dp">
+            <RadioButton android:id="@+id/radioLayout2" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:text="2 Slots (1×2)"
+                android:textColor="#FFFFFF" />
+            <RadioButton android:id="@+id/radioLayout4" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:text="4 Slots (2×2)"
+                android:textColor="#FFFFFF" android:checked="true" />
+            <RadioButton android:id="@+id/radioLayoutArc" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:text="Arc"
+                android:textColor="#FFFFFF" />
+            <RadioButton android:id="@+id/radioLayout2x3" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:text="6 Slots (2×3)"
+                android:textColor="#FFFFFF" />
+        </RadioGroup>
+
+        <TextView android:id="@+id/tvLayout2x3Warning"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="⚠ 6 values while driving — use sparingly"
+            android:textColor="#FF9800" android:textSize="12sp"
+            android:layout_marginBottom="16dp" android:visibility="gone" />
+
+        <!-- Slot spinners — labels updated dynamically -->
+        <LinearLayout android:id="@+id/sectionSlots"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:layout_marginBottom="8dp">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="8dp"
+                android:gravity="center_vertical">
+                <TextView android:id="@+id/tvSlot0" android:layout_width="100dp"
+                    android:layout_height="wrap_content" android:text="Slot 1"
+                    android:textColor="#FFFFFF" />
+                <Spinner android:id="@+id/spinnerSlot0" android:layout_width="0dp"
+                    android:layout_height="48dp" android:layout_weight="1"
+                    android:backgroundTint="#FFFFFF" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="8dp"
+                android:gravity="center_vertical">
+                <TextView android:id="@+id/tvSlot1" android:layout_width="100dp"
+                    android:layout_height="wrap_content" android:text="Slot 2"
+                    android:textColor="#FFFFFF" />
+                <Spinner android:id="@+id/spinnerSlot1" android:layout_width="0dp"
+                    android:layout_height="48dp" android:layout_weight="1"
+                    android:backgroundTint="#FFFFFF" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="8dp"
+                android:gravity="center_vertical">
+                <TextView android:id="@+id/tvSlot2" android:layout_width="100dp"
+                    android:layout_height="wrap_content" android:text="Slot 3"
+                    android:textColor="#FFFFFF" />
+                <Spinner android:id="@+id/spinnerSlot2" android:layout_width="0dp"
+                    android:layout_height="48dp" android:layout_weight="1"
+                    android:backgroundTint="#FFFFFF" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="8dp"
+                android:gravity="center_vertical">
+                <TextView android:id="@+id/tvSlot3" android:layout_width="100dp"
+                    android:layout_height="wrap_content" android:text="Slot 4"
+                    android:textColor="#FFFFFF" />
+                <Spinner android:id="@+id/spinnerSlot3" android:layout_width="0dp"
+                    android:layout_height="48dp" android:layout_weight="1"
+                    android:backgroundTint="#FFFFFF" />
+            </LinearLayout>
+
+            <!-- Slots 4 & 5 — only visible in 2x3 layout -->
+            <LinearLayout android:id="@+id/layoutSlot4" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="horizontal"
+                android:layout_marginBottom="8dp" android:gravity="center_vertical"
+                android:visibility="gone">
+                <TextView android:id="@+id/tvSlot4" android:layout_width="100dp"
+                    android:layout_height="wrap_content" android:text="Slot 5"
+                    android:textColor="#FFFFFF" />
+                <Spinner android:id="@+id/spinnerSlot4" android:layout_width="0dp"
+                    android:layout_height="48dp" android:layout_weight="1"
+                    android:backgroundTint="#FFFFFF" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/layoutSlot5" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="horizontal"
+                android:layout_marginBottom="8dp" android:gravity="center_vertical"
+                android:visibility="gone">
+                <TextView android:id="@+id/tvSlot5" android:layout_width="100dp"
+                    android:layout_height="wrap_content" android:text="Slot 6"
+                    android:textColor="#FFFFFF" />
+                <Spinner android:id="@+id/spinnerSlot5" android:layout_width="0dp"
+                    android:layout_height="48dp" android:layout_weight="1"
+                    android:backgroundTint="#FFFFFF" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <Button android:id="@+id/btnResetLayout"
+            android:layout_width="wrap_content" android:layout_height="48dp"
+            android:text="Reset to Defaults"
+            android:backgroundTint="#444444" android:textColor="#FFFFFF"
+            android:layout_marginBottom="8dp" />
+
+        <Button android:id="@+id/btnSavedVehicles"
+            android:layout_width="match_parent" android:layout_height="48dp"
+            android:text="Saved Vehicles →"
+            android:backgroundTint="#1E1E1E" android:textColor="#00E676"
+            android:layout_marginBottom="24dp" />
+
         <!-- ── Display Theme ───────────────────────────────────────────────── -->
 
         <View

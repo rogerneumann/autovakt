@@ -15,9 +15,11 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.rogerneumann.vakt.data.GaugeLayout
 import com.rogerneumann.vakt.data.LightingManager
 import com.rogerneumann.vakt.data.LightingMode
 import com.rogerneumann.vakt.data.UnitSystem
+import com.rogerneumann.vakt.data.VehicleLayoutManager
 import com.rogerneumann.vakt.data.VehicleProfileHub
 import com.rogerneumann.vakt.data.VehicleProfileManager
 import com.rogerneumann.vakt.databinding.ActivitySettingsBinding
@@ -34,6 +36,7 @@ class SettingsActivity : AppCompatActivity() {
     @Inject lateinit var profileHub: VehicleProfileHub
     @Inject lateinit var profileManager: VehicleProfileManager
     @Inject lateinit var lightingManager: LightingManager
+    @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
 
     private lateinit var binding: ActivitySettingsBinding
 
@@ -56,8 +59,122 @@ class SettingsActivity : AppCompatActivity() {
         setupVehicleSpinner()
         setupUnitButtons()
         setupThemeSection()
+        setupDashboardLayoutSection()
         setupImportButton()
         setupSaveButton()
+    }
+
+    // ── Dashboard Layout section ──────────────────────────────────────────────
+
+    private fun setupDashboardLayoutSection() {
+        val profile = profileManager.getActiveProfile()
+        val key = vehicleLayoutManager.resolveKey(null, null, profile.id)
+
+        // Setup layout radio group
+        val currentLayout = vehicleLayoutManager.getLayout(key, this, false)
+        when (currentLayout) {
+            GaugeLayout.GRID_2   -> binding.radioLayout2.isChecked = true
+            GaugeLayout.GRID_4   -> binding.radioLayout4.isChecked = true
+            GaugeLayout.GRID_2x3 -> binding.radioLayout2x3.isChecked = true
+            GaugeLayout.ARC      -> binding.radioLayoutArc.isChecked = true
+        }
+
+        // Build spinner options: empty + profile shortNames + standard shortNames
+        val standardShortNames = listOf(
+            "SOC", "PWR", "SPEED", "RPM", "instantMiPerKwh", "instantMpg",
+            "averageMiPerKwh", "averageMpg", "HV_V", "HV_I",
+            "BATT_T_MAX", "BATT_T_MIN", "LOAD", "FUEL_RATE", "BOOST_PSI"
+        )
+        val profileShortNames = profile.customPids.map { it.shortName }.toSet()
+        val allShortNames = (profileShortNames + standardShortNames).distinct().sorted()
+        val spinnerOptions = listOf("— empty —") + allShortNames
+
+        // Setup spinners
+        val currentAssignments = vehicleLayoutManager.getSlotAssignments(key)
+        val spinnerAdapters = mutableListOf<ArrayAdapter<String>>()
+
+        for (i in 0..5) {
+            val spinner = when (i) {
+                0 -> binding.spinnerSlot0
+                1 -> binding.spinnerSlot1
+                2 -> binding.spinnerSlot2
+                3 -> binding.spinnerSlot3
+                4 -> binding.spinnerSlot4
+                5 -> binding.spinnerSlot5
+                else -> continue
+            }
+
+            val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, spinnerOptions)
+            spinner.adapter = adapter
+            spinnerAdapters.add(adapter)
+
+            // Restore selection
+            val currentValue = if (i < currentAssignments.size) currentAssignments[i] else null
+            val position = if (currentValue.isNullOrEmpty()) 0 else spinnerOptions.indexOf(currentValue)
+            spinner.setSelection(if (position >= 0) position else 0)
+
+            // On change listener
+            spinner.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    val selected = spinnerOptions[position]
+                    val shortName = if (selected == "— empty —") null else selected
+                    vehicleLayoutManager.saveSlotAssignment(key, i, shortName)
+                    vehicleLayoutManager.setConfigured(key, true)
+                }
+
+                override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+            })
+        }
+
+        // Layout radio group listener
+        binding.radioGroupLayout.setOnCheckedChangeListener { _, _ ->
+            val layout = when {
+                binding.radioLayout2.isChecked -> GaugeLayout.GRID_2
+                binding.radioLayout4.isChecked -> GaugeLayout.GRID_4
+                binding.radioLayout2x3.isChecked -> GaugeLayout.GRID_2x3
+                binding.radioLayoutArc.isChecked -> GaugeLayout.ARC
+                else -> GaugeLayout.GRID_4
+            }
+
+            vehicleLayoutManager.saveLayout(key, layout)
+            vehicleLayoutManager.setConfigured(key, true)
+            updateSlotVisibility(layout)
+        }
+
+        // Initial slot visibility
+        updateSlotVisibility(currentLayout)
+
+        // Reset to defaults button
+        binding.btnResetLayout.setOnClickListener {
+            vehicleLayoutManager.resetToDefaults(key, profile)
+            // Refresh spinners
+            val newAssignments = vehicleLayoutManager.getSlotAssignments(key)
+            for (i in 0..5) {
+                val currentValue = if (i < newAssignments.size) newAssignments[i] else null
+                val position = if (currentValue.isNullOrEmpty()) 0 else spinnerOptions.indexOf(currentValue)
+                when (i) {
+                    0 -> binding.spinnerSlot0.setSelection(if (position >= 0) position else 0)
+                    1 -> binding.spinnerSlot1.setSelection(if (position >= 0) position else 0)
+                    2 -> binding.spinnerSlot2.setSelection(if (position >= 0) position else 0)
+                    3 -> binding.spinnerSlot3.setSelection(if (position >= 0) position else 0)
+                    4 -> binding.spinnerSlot4.setSelection(if (position >= 0) position else 0)
+                    5 -> binding.spinnerSlot5.setSelection(if (position >= 0) position else 0)
+                }
+            }
+        }
+
+        // Saved Vehicles button (Block 12e stub)
+        binding.btnSavedVehicles.setOnClickListener {
+            // TODO: Block 12e — SavedVehiclesActivity will be implemented in Block 12e
+            Toast.makeText(this, "Saved Vehicles (coming soon)", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun updateSlotVisibility(layout: GaugeLayout) {
+        val show2x3 = layout == GaugeLayout.GRID_2x3
+        binding.tvLayout2x3Warning.visibility = if (show2x3) View.VISIBLE else View.GONE
+        binding.layoutSlot4.visibility = if (show2x3) View.VISIBLE else View.GONE
+        binding.layoutSlot5.visibility = if (show2x3) View.VISIBLE else View.GONE
     }
 
     // ── Theme section ─────────────────────────────────────────────────────────
