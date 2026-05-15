@@ -5,9 +5,11 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.net.BindException
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.CopyOnWriteArraySet
+import android.util.Log
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -48,6 +50,12 @@ class VaktBridgeServer @Inject constructor(
     var isBridgeEnabled = true
 
     /**
+     * The actual port the bridge is currently listening on.
+     * Set when start() successfully binds to a port.
+     */
+    var activePort: Int = 0
+
+    /**
      * Starts the TCP server. Safe to call multiple times — cancels any
      * existing server job and closes the old socket before rebinding to
      * prevent BindException on restart.
@@ -58,7 +66,21 @@ class VaktBridgeServer @Inject constructor(
 
         serverJob = scope.launch {
             try {
-                serverSocket = ServerSocket(port)
+                var actualPort = port
+                try {
+                    serverSocket = ServerSocket(port)
+                } catch (e: BindException) {
+                    // Port 35000 in use; try fallback port 35001
+                    try {
+                        actualPort = 35001
+                        serverSocket = ServerSocket(35001)
+                    } catch (e: Exception) {
+                        // Both ports failed — let outer catch handle it
+                        throw e
+                    }
+                }
+                activePort = actualPort
+                Log.i("VaktBridge", "Bridge listening on port $actualPort")
                 while (isActive) {
                     val client = try {
                         serverSocket?.accept()
@@ -73,7 +95,8 @@ class VaktBridgeServer @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                // Startup failed (e.g., port in use) — serverJob ends cleanly.
+                // Startup failed (e.g., both ports in use) — serverJob ends cleanly.
+                activePort = 0
             }
         }
     }

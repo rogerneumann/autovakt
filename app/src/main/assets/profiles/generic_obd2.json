@@ -7,6 +7,7 @@
   "powertrain": "ICE_GAS",
   "initCommands": ["ATSP0"],
   "vinPatterns": [],
+  "defaultSlots": ["RPM", "SPEED", "LOAD", "FUEL"],
   "pids": [
     {
       "name": "Vehicle Speed",

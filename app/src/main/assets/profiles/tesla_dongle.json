@@ -7,6 +7,7 @@
   "powertrain": "EV",
   "initCommands": ["ATSP6"],
   "vinPatterns": ["5YJ3E", "5YJSA", "5YJ3F"],
+  "defaultSlots": ["SOC", "PWR", "SPEED", "COOLANT"],
   "pids": [
     {
       "name": "State of Charge",
