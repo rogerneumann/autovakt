@@ -58,6 +58,9 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
 
+    // Prevents live-save listeners from firing during initial UI restore
+    private var settingsInitialized = false
+
     private val locationPermLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -81,8 +84,9 @@ class SettingsActivity : AppCompatActivity() {
         setupBridgeSection()
         setupImportButton()
         setupShareLogsButton()
-        setupSaveButton()
+        setupCloseButton()
         binding.tvVersion.text = "Vakt v${BuildConfig.VERSION_NAME}"
+        settingsInitialized = true
     }
 
     // ── Dashboard Layout section ──────────────────────────────────────────────
@@ -342,23 +346,34 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.radioGroupTheme.setOnCheckedChangeListener { _, _ ->
             updateThemeSectionVisibility()
-            if (!binding.radioThemeAuto.isChecked) {
-                saveThemeSettings()
-            }
+            if (settingsInitialized) saveThemeSettings()
         }
 
         binding.radioGroupAutoMode.setOnCheckedChangeListener { _, _ ->
             updateAutoModeSectionVisibility()
+            if (settingsInitialized) saveThemeSettings()
         }
 
         binding.sliderDawnDusk.addOnChangeListener { _, _, _ ->
             binding.tvDawnTime.text = formatHour(binding.sliderDawnDusk.values[0], is24h)
             binding.tvDuskTime.text = formatHour(binding.sliderDawnDusk.values[1], is24h)
         }
+        binding.sliderDawnDusk.addOnSliderTouchListener(object : com.google.android.material.slider.RangeSlider.OnSliderTouchListener {
+            override fun onStartTrackingTouch(slider: com.google.android.material.slider.RangeSlider) {}
+            override fun onStopTrackingTouch(slider: com.google.android.material.slider.RangeSlider) {
+                if (settingsInitialized) saveThemeSettings()
+            }
+        })
 
         binding.sliderLuxThreshold.addOnChangeListener { _, value, _ ->
             binding.tvLuxValue.text = "Switch to light above: ${value.toInt()} lux"
         }
+        binding.sliderLuxThreshold.addOnSliderTouchListener(object : com.google.android.material.slider.Slider.OnSliderTouchListener {
+            override fun onStartTrackingTouch(slider: com.google.android.material.slider.Slider) {}
+            override fun onStopTrackingTouch(slider: com.google.android.material.slider.Slider) {
+                if (settingsInitialized) saveThemeSettings()
+            }
+        })
 
         binding.switchUseLocation.setOnCheckedChangeListener { _, checked ->
             if (checked) {
@@ -372,6 +387,7 @@ class SettingsActivity : AppCompatActivity() {
                     Toast.makeText(this, "No GPS fix yet — open the app outdoors to cache a location", Toast.LENGTH_LONG).show()
                 }
             }
+            if (settingsInitialized) saveThemeSettings()
         }
     }
 
@@ -487,6 +503,18 @@ class SettingsActivity : AppCompatActivity() {
             val index = profiles.indexOfFirst { it.id == activeId }
             binding.spinnerVehicle.setSelection(if (index >= 0) index + 1 else 0)
         }
+
+        binding.spinnerVehicle.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                if (!settingsInitialized) return
+                if (pos == 0) {
+                    profileManager.setActiveProfile("auto")
+                } else {
+                    profileManager.setActiveProfile(profiles[pos - 1].id)
+                }
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        }
     }
 
     private fun setupUnitButtons() {
@@ -494,6 +522,15 @@ class SettingsActivity : AppCompatActivity() {
             binding.radioMetric.isChecked = true
         } else {
             binding.radioImperial.isChecked = true
+        }
+
+        listOf(binding.radioMetric, binding.radioImperial).forEach { rb ->
+            rb.setOnCheckedChangeListener { _, isChecked ->
+                if (!isChecked || !settingsInitialized) return@setOnCheckedChangeListener
+                profileManager.setUnitPreference(
+                    if (binding.radioMetric.isChecked) UnitSystem.METRIC else UnitSystem.IMPERIAL
+                )
+            }
         }
     }
 
@@ -617,24 +654,10 @@ class SettingsActivity : AppCompatActivity() {
         setupVehicleSpinner()
     }
 
-    // ── Save ──────────────────────────────────────────────────────────────────
+    // ── Close ─────────────────────────────────────────────────────────────────
 
-    private fun setupSaveButton() {
-        binding.btnSave.setOnClickListener {
-            val selectedIndex = binding.spinnerVehicle.selectedItemPosition
-            if (selectedIndex == 0) {
-                profileManager.setActiveProfile("auto")
-            } else {
-                val selectedProfile = profileHub.getAvailableProfiles()[selectedIndex - 1]
-                profileManager.setActiveProfile(selectedProfile.id)
-            }
-
-            val unitSystem = if (binding.radioMetric.isChecked) UnitSystem.METRIC else UnitSystem.IMPERIAL
-            profileManager.setUnitPreference(unitSystem)
-
-            saveThemeSettings()
-            finish()
-        }
+    private fun setupCloseButton() {
+        binding.btnSave.setOnClickListener { finish() }
     }
 
     // ── Vakt Bridge section ───────────────────────────────────────────────────

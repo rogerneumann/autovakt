@@ -760,9 +760,9 @@
             android:id="@+id/btnSave"
             android:layout_width="match_parent"
             android:layout_height="64dp"
-            android:text="Save &amp; Close"
-            android:backgroundTint="#00E676"
-            android:textColor="#000000" />
+            android:text="Done"
+            android:backgroundTint="#424242"
+            android:textColor="#FFFFFF" />
 
         <TextView
             android:id="@+id/tvVersion"
