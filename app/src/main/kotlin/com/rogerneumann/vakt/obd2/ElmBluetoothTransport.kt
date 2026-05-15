@@ -1,5 +1,6 @@
 package com.rogerneumann.vakt.obd2
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothSocket
 import kotlinx.coroutines.Dispatchers
@@ -7,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.CoroutineScope
@@ -21,6 +23,7 @@ import javax.inject.Singleton
 /**
  * Handles the low-level Bluetooth RFCOMM transport for ELM327 communication.
  */
+@SuppressLint("MissingPermission")
 @Singleton
 class ElmBluetoothTransport @Inject constructor(
     private val bluetoothAdapter: BluetoothAdapter?
@@ -85,24 +88,26 @@ class ElmBluetoothTransport @Inject constructor(
         return withContext(Dispatchers.IO) {
             val buffer = StringBuilder()
             val tempBuffer = ByteArray(1024)
-            
+
             try {
-                while (true) {
-                    val bytesRead = inputStream?.read(tempBuffer) ?: -1
-                    if (bytesRead == -1) break
-                    
-                    val chunk = String(tempBuffer, 0, bytesRead)
-                    buffer.append(chunk)
-                    
-                    if (chunk.contains(">")) {
-                        lastResponseTime = System.currentTimeMillis()
-                        break
+                withTimeoutOrNull(5_000L) {
+                    while (true) {
+                        val bytesRead = inputStream?.read(tempBuffer) ?: -1
+                        if (bytesRead == -1) break
+
+                        val chunk = String(tempBuffer, 0, bytesRead)
+                        buffer.append(chunk)
+
+                        if (chunk.contains(">")) {
+                            lastResponseTime = System.currentTimeMillis()
+                            break
+                        }
                     }
                 }
             } catch (e: Exception) {
                 handleTransportError(e)
             }
-            
+
             buffer.toString().trim()
         }
     }

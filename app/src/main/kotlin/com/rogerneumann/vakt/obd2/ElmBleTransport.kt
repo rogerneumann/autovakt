@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
+import android.annotation.SuppressLint
 import android.os.Build
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -25,6 +26,7 @@ import javax.inject.Singleton
  * Handles BLE GATT communication with ELM327-compatible adapters.
  * Supports NUS (Nordic UART Service) and other standard BLE profiles.
  */
+@SuppressLint("MissingPermission")
 @Singleton
 class ElmBleTransport @Inject constructor(
     private val bluetoothAdapter: BluetoothAdapter?
@@ -64,8 +66,8 @@ class ElmBleTransport @Inject constructor(
     private var watchdogJob: kotlinx.coroutines.Job? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    // Channel for receiving notification data
-    private val rxChannel = Channel<ByteArray>(capacity = 100)
+    // Channel for receiving notification data — recreated on each connect() to avoid closed-channel sends after cleanup()
+    private var rxChannel = Channel<ByteArray>(capacity = 100)
 
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     override val connectionState: StateFlow<ConnectionState> = _connectionState
@@ -155,6 +157,7 @@ class ElmBleTransport @Inject constructor(
             try {
                 _connectionState.value = ConnectionState.Connecting
                 lastDeviceAddress = deviceAddress
+                rxChannel = Channel(capacity = 100) // fresh channel — prior one may be closed from cleanup()
 
                 val device = bluetoothAdapter.getRemoteDevice(deviceAddress)
                 bluetoothAdapter.cancelDiscovery()
