@@ -1,12 +1,19 @@
 package com.rogerneumann.vakt.ui
 
-import android.Manifest
+import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,6 +38,8 @@ import com.rogerneumann.vakt.ui.scan.DeviceScanFragment
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import android.Manifest
+import android.content.pm.PackageManager
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -46,6 +55,8 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
 
     private var titleTapCount = 0
+    private var hamburgerPulseAnimator: ObjectAnimator? = null
+    private var hamburgerDotView: View? = null
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -68,7 +79,19 @@ class MainActivity : AppCompatActivity() {
         setupDemoEasterEgg()
         binding.dashboardView.vehicleLayoutManager = vehicleLayoutManager
         observeLiveData()
-        FirstRunWizardManager(this, sharedPreferences, profileHub, profileManager).showIfNeeded()
+        FirstRunWizardManager(this, sharedPreferences, profileHub, profileManager) {
+            // Callback: wizard was skipped or completed without pairing
+            startHamburgerPulse()
+        }.showIfNeeded()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        showSwipeHintIfNeeded()
+        // Clear the hamburger dot if a device is now paired
+        if (sharedPreferences.getString("saved_device_address", null) != null) {
+            removeHamburgerDot()
+        }
     }
 
     private fun setupImmersiveMode() {
@@ -99,6 +122,11 @@ class MainActivity : AppCompatActivity() {
     private fun setupHamburgerReveal() {
         binding.dashboardView.setOnClickListener { showHamburger() }
         binding.btnHamburger.setOnClickListener {
+            // Stop any active pulse animation on first tap
+            hamburgerPulseAnimator?.cancel()
+            hamburgerPulseAnimator = null
+            showHamburgerDot()
+
             cancelHamburgerHide()
             binding.drawerLayout.setDrawerLockMode(androidx.drawerlayout.widget.DrawerLayout.LOCK_MODE_UNLOCKED)
             binding.drawerLayout.openDrawer(GravityCompat.START)
@@ -231,4 +259,132 @@ class MainActivity : AppCompatActivity() {
 
     private fun hasPermission(permission: String) =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+
+    // ── Block 14c: Swipe hint overlay ────────────────────────────────────────
+
+    /**
+     * On first launch after the wizard (seen_swipe_hint == false):
+     * shows a semi-transparent overlay with left/right arrow hints.
+     * Dismissed on any touch.
+     */
+    private fun showSwipeHintIfNeeded() {
+        val prefs = getSharedPreferences("vakt_prefs", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("seen_swipe_hint", false)) return
+
+        val root = binding.root as? ViewGroup ?: return
+
+        // Container overlay (semi-transparent dark)
+        val overlay = FrameLayout(this).apply {
+            setBackgroundColor(Color.argb(51, 0, 0, 0))  // 20% opacity
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        val leftArrow = TextView(this).apply {
+            text = "◀ Data"
+            setTextColor(Color.WHITE)
+            textSize = 18f
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).also { lp ->
+                lp.gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                lp.marginStart = dpToPx(24)
+            }
+        }
+
+        val rightArrow = TextView(this).apply {
+            text = "Music ▶"
+            setTextColor(Color.WHITE)
+            textSize = 18f
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).also { lp ->
+                lp.gravity = Gravity.CENTER_VERTICAL or Gravity.END
+                lp.marginEnd = dpToPx(24)
+            }
+        }
+
+        overlay.addView(leftArrow)
+        overlay.addView(rightArrow)
+
+        overlay.setOnClickListener {
+            root.removeView(overlay)
+            prefs.edit().putBoolean("seen_swipe_hint", true).apply()
+        }
+
+        root.addView(overlay)
+    }
+
+    // ── Block 14d: Hamburger pulse + red dot ─────────────────────────────────
+
+    /**
+     * Starts a 20-second pulse animation on the hamburger button.
+     * Called after wizard skip or when no device is paired on first launch.
+     * After 20 s (or on first tap): stops pulse, shows red dot badge.
+     */
+    fun startHamburgerPulse() {
+        val hamburger = binding.btnHamburger
+        // Make the hamburger visible so the pulse is noticeable
+        hamburger.animate().alpha(1f).setDuration(200).start()
+
+        hamburgerPulseAnimator?.cancel()
+        val animator = ObjectAnimator.ofPropertyValuesHolder(
+            hamburger,
+            PropertyValuesHolder.ofFloat("scaleX", 1.0f, 1.15f, 1.0f),
+            PropertyValuesHolder.ofFloat("scaleY", 1.0f, 1.15f, 1.0f)
+        ).apply {
+            duration = 800
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.RESTART
+        }
+        animator.start()
+        hamburgerPulseAnimator = animator
+
+        // After 20 seconds: stop pulse, show red dot
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (hamburgerPulseAnimator === animator) {
+                animator.cancel()
+                hamburgerPulseAnimator = null
+                showHamburgerDot()
+            }
+        }, 20_000L)
+    }
+
+    private fun showHamburgerDot() {
+        // Don't add a dot if device is already paired
+        if (sharedPreferences.getString("saved_device_address", null) != null) return
+        // Don't add duplicate dots
+        if (hamburgerDotView != null) return
+
+        val hamburger = binding.btnHamburger
+        val container = hamburger.parent as? ViewGroup ?: return
+
+        val dotSizePx = dpToPx(12)
+        val dot = View(this).apply {
+            setBackgroundColor(Color.RED)
+            layoutParams = FrameLayout.LayoutParams(dotSizePx, dotSizePx).also { lp ->
+                lp.gravity = Gravity.TOP or Gravity.START
+                // Position dot at top-right of hamburger button
+                lp.topMargin   = hamburger.top + dpToPx(2)
+                lp.marginStart = hamburger.right - dotSizePx - dpToPx(2)
+            }
+        }
+        container.addView(dot)
+        hamburgerDotView = dot
+    }
+
+    private fun removeHamburgerDot() {
+        val dot = hamburgerDotView ?: return
+        (dot.parent as? ViewGroup)?.removeView(dot)
+        hamburgerDotView = null
+        hamburgerPulseAnimator?.cancel()
+        hamburgerPulseAnimator = null
+    }
+
+    private fun dpToPx(dp: Int): Int =
+        (dp * resources.displayMetrics.density + 0.5f).toInt()
 }
