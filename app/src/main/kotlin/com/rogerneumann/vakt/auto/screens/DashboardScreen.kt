@@ -234,7 +234,7 @@ class DashboardScreen(
         val layout      = vehicleLayoutManager.getLayout(layoutKey, carContext, isAA = true)
         val assignments = vehicleLayoutManager.getSlotAssignments(layoutKey)
         val profile     = lastData.vehicleProfile
-        val slots       = GaugeSlotResolver.resolve(lastData, assignments, profile)
+        val slots       = GaugeSlotResolver.resolve(lastData, assignments, profile, vehicleLayoutManager)
         renderer.draw(canvas, slots, layout, currentTheme)
 
         canvas.restore()

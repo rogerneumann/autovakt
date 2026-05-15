@@ -15,6 +15,7 @@ import androidx.media.MediaBrowserServiceCompat
 import com.rogerneumann.vakt.auto.render.GaugeSlotResolver
 import com.rogerneumann.vakt.data.OBD2Repository
 import com.rogerneumann.vakt.data.VaktLiveData
+import com.rogerneumann.vakt.data.VehicleLayoutManager
 import com.rogerneumann.vakt.data.VehicleProfile
 import com.rogerneumann.vakt.util.VaktDisplayState
 import dagger.hilt.android.AndroidEntryPoint
@@ -44,6 +45,7 @@ class VaktMediaBrowserService : MediaBrowserServiceCompat() {
 
     @Inject lateinit var repository: OBD2Repository
     @Inject lateinit var mediaRemoteManager: MediaRemoteManager
+    @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
 
     private var mediaSession: MediaSessionCompat? = null
     private val rootId = "vakt_root"
@@ -180,7 +182,7 @@ class VaktMediaBrowserService : MediaBrowserServiceCompat() {
         x0: Float, y0: Float, x1: Float, y1: Float
     ) {
         val defaultSlots = listOf("SOC", "PWR", "SPEED", "BATT_T_MAX")
-        val slots = GaugeSlotResolver.resolve(data, defaultSlots, VehicleProfile.DEFAULT)
+        val slots = GaugeSlotResolver.resolve(data, defaultSlots, VehicleProfile.DEFAULT, vehicleLayoutManager)
 
         val pad = 8f
         val cellW = (x1 - x0 - pad * 3f) / 2f
