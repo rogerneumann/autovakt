@@ -22,16 +22,26 @@ class OBD2Repository @Inject constructor(
     private val protocolHandler: GmProtocolHandler,
     private val tripRepository: TripRepository,
     private val profileManager: VehicleProfileManager,
-    private val profileHub: VehicleProfileHub
+    private val profileHub: VehicleProfileHub,
+    private val vehicleLayoutManager: VehicleLayoutManager
 ) {
     private val _liveData = MutableStateFlow(VaktLiveData())
     val liveData: StateFlow<VaktLiveData> = _liveData.asStateFlow()
+
+    private val _layoutSuggestion = MutableStateFlow<String?>(null)
+    val layoutSuggestion: StateFlow<String?> = _layoutSuggestion.asStateFlow()
+
+    private val _currentLayoutKey = MutableStateFlow("gauge_layout_global")
+    val currentLayoutKey: StateFlow<String> = _currentLayoutKey.asStateFlow()
 
     private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var pollingJob: Job? = null
 
     private var isDemoMode = false
     private var vehicleProfile = VehicleProfile.DEFAULT
+
+    private var previousVin: String? = null
+    private var previousPowertrain: PowertrainType? = null
 
     private var accumulatedEnergyKwh = 0f
     private var accumulatedDistanceMiles = 0f
@@ -87,6 +97,21 @@ class OBD2Repository @Inject constructor(
 
             // Auto-select profile by VIN if unambiguous
             vehicleProfile = resolveProfile(vin)
+
+            // Resolve layout key and record this connection
+            val adapterMac = null  // TODO: expose from TransportDelegate in a future block
+            val layoutKey = vehicleLayoutManager.resolveKey(vin, adapterMac, vehicleProfile.id)
+            vehicleLayoutManager.recordConnection(layoutKey, vehicleProfile.id, vin, adapterMac, vehicleProfile)
+            _currentLayoutKey.value = layoutKey
+
+            // Detect powertrain class change for new VIN
+            val isNewVin = vin != null && vin != previousVin
+            val samePowertrain = previousPowertrain == null || previousPowertrain == vehicleProfile.powertrain
+            if (isNewVin && previousVin != null && samePowertrain) {
+                _layoutSuggestion.value = "New vehicle detected. Customise your dashboard layout in Settings."
+            }
+            previousVin = vin
+            previousPowertrain = vehicleProfile.powertrain
 
             // Run profile-specific ELM init commands
             for (cmd in vehicleProfile.initCommands) {
@@ -273,6 +298,9 @@ class OBD2Repository @Inject constructor(
         var demoInstant = 3.5f
         var demoAverage = 3.8f
         vehicleProfile = profileManager.getActiveProfile()
+
+        val demoKey = vehicleLayoutManager.resolveKey(null, null, vehicleProfile.id)
+        _currentLayoutKey.value = demoKey
 
         while (coroutineContext.isActive) {
             currentSoc -= 0.01f
