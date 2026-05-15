@@ -189,6 +189,11 @@ class GaugeRenderer {
         val ch = bottom - top
         val cx = left + cw / 2f
 
+        // Cap text sizes against cell width so tall-narrow tiles (portrait phone grid) don't overflow
+        val valueSize = minOf(ch * valueSizeFraction, cw * 0.48f)
+        val labelSize = minOf(ch * 0.13f, cw * 0.16f)
+        val unitSize  = minOf(ch * 0.12f, cw * 0.15f)
+
         fillPaint.color = t.cardBackground
         fillPaint.alpha = 255
         canvas.drawRoundRect(left, top, right, bottom, 12f, 12f, fillPaint)
@@ -196,17 +201,17 @@ class GaugeRenderer {
         // Label
         textPaint.color     = t.text
         textPaint.textAlign = Paint.Align.CENTER
-        textPaint.textSize  = ch * 0.13f
+        textPaint.textSize  = labelSize
         textPaint.alpha     = (255 * 0.55f).toInt()
         canvas.drawText(slot.label, cx, top + ch * 0.24f, textPaint)
 
         // Value
-        textPaint.textSize = ch * valueSizeFraction
+        textPaint.textSize = valueSize
         textPaint.alpha    = 255
         canvas.drawText(slot.value, cx, top + ch * 0.60f, textPaint)
 
         // Unit
-        textPaint.textSize = ch * 0.12f
+        textPaint.textSize = unitSize
         textPaint.alpha    = (255 * 0.65f).toInt()
         canvas.drawText(slot.unit, cx, top + ch * 0.78f, textPaint)
 

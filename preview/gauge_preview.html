@@ -195,6 +195,10 @@ function rrect(ctx, x, y, w, h, r) {
 function drawTile(ctx, left, top, right, bottom, s, valueSizeFrac) {
   valueSizeFrac = valueSizeFrac || 0.32;
   const cw = right - left, ch = bottom - top, cx = left + cw / 2;
+  // Cap value size so tall-narrow cells (portrait phone grid) don't overflow
+  const valueSize = Math.min(ch * valueSizeFrac, cw * 0.48);
+  const labelSize = Math.min(ch * 0.13, cw * 0.16);
+  const unitSize  = Math.min(ch * 0.12, cw * 0.15);
 
   ctx.fillStyle = T.card;
   rrect(ctx, left, top, cw, ch, 12);
@@ -203,17 +207,17 @@ function drawTile(ctx, left, top, right, bottom, s, valueSizeFrac) {
   // Label
   ctx.fillStyle   = T.textDim;
   ctx.textAlign   = 'center';
-  ctx.font        = `${ch * 0.13}px sans-serif`;
+  ctx.font        = `${labelSize}px sans-serif`;
   ctx.fillText(s.label, cx, top + ch * 0.24);
 
   // Value
   ctx.fillStyle   = T.text;
-  ctx.font        = `bold ${ch * valueSizeFrac}px sans-serif`;
+  ctx.font        = `bold ${valueSize}px sans-serif`;
   ctx.fillText(s.value, cx, top + ch * 0.60);
 
   // Unit
   ctx.fillStyle   = T.textUnit;
-  ctx.font        = `${ch * 0.12}px sans-serif`;
+  ctx.font        = `${unitSize}px sans-serif`;
   ctx.fillText(s.unit, cx, top + ch * 0.78);
 }
 
