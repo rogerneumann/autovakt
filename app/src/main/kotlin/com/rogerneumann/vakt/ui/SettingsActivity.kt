@@ -163,10 +163,8 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        // Saved Vehicles button (Block 12e stub)
         binding.btnSavedVehicles.setOnClickListener {
-            // TODO: Block 12e — SavedVehiclesActivity will be implemented in Block 12e
-            Toast.makeText(this, "Saved Vehicles (coming soon)", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, com.rogerneumann.vakt.ui.vehicles.SavedVehiclesActivity::class.java))
         }
     }
 
