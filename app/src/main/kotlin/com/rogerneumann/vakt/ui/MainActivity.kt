@@ -20,6 +20,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.rogerneumann.vakt.R
 import com.rogerneumann.vakt.data.LightingManager
+import com.rogerneumann.vakt.data.VehicleLayoutManager
 import com.rogerneumann.vakt.data.VehicleProfileHub
 import com.rogerneumann.vakt.data.VehicleProfileManager
 import com.rogerneumann.vakt.databinding.ActivityMainBinding
@@ -42,6 +43,7 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var lightingManager: LightingManager
     @Inject lateinit var profileHub: VehicleProfileHub
     @Inject lateinit var profileManager: VehicleProfileManager
+    @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
 
     private var titleTapCount = 0
 
@@ -64,6 +66,7 @@ class MainActivity : AppCompatActivity() {
         setupDrawer()
         setupHamburgerReveal()
         setupDemoEasterEgg()
+        binding.dashboardView.vehicleLayoutManager = vehicleLayoutManager
         observeLiveData()
         FirstRunWizardManager(this, sharedPreferences, profileHub, profileManager).showIfNeeded()
     }

@@ -102,73 +102,269 @@
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical" android:layout_marginBottom="8dp">
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:layout_marginBottom="8dp"
-                android:gravity="center_vertical">
-                <TextView android:id="@+id/tvSlot0" android:layout_width="100dp"
-                    android:layout_height="wrap_content" android:text="Slot 1"
-                    android:textColor="#FFFFFF" />
-                <Spinner android:id="@+id/spinnerSlot0" android:layout_width="0dp"
-                    android:layout_height="48dp" android:layout_weight="1"
-                    android:backgroundTint="#FFFFFF" />
+            <!-- Slot 0 -->
+            <LinearLayout android:id="@+id/layoutSlot0"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:layout_marginBottom="8dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:id="@+id/tvSlot0" android:layout_width="100dp"
+                        android:layout_height="wrap_content" android:text="Slot 1"
+                        android:textColor="#FFFFFF" />
+                    <Spinner android:id="@+id/spinnerSlot0" android:layout_width="0dp"
+                        android:layout_height="48dp" android:layout_weight="1"
+                        android:backgroundTint="#FFFFFF" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/displayTypeRow0"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical"
+                    android:paddingStart="100dp" android:paddingTop="4dp" android:visibility="gone">
+                    <Button android:id="@+id/btnDisplayN0" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="N"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnDisplayArc0" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="Arc"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnDisplayBar0" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="Bar"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="8dp" />
+                    <EditText android:id="@+id/etMin0" android:layout_width="64dp"
+                        android:layout_height="36dp" android:hint="Min"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="#FFFFFF" android:textColorHint="#666666"
+                        android:textSize="12sp" android:layout_marginEnd="4dp"
+                        android:visibility="gone" />
+                    <EditText android:id="@+id/etMax0" android:layout_width="64dp"
+                        android:layout_height="36dp" android:hint="Max"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="#FFFFFF" android:textColorHint="#666666"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:layout_marginBottom="8dp"
-                android:gravity="center_vertical">
-                <TextView android:id="@+id/tvSlot1" android:layout_width="100dp"
-                    android:layout_height="wrap_content" android:text="Slot 2"
-                    android:textColor="#FFFFFF" />
-                <Spinner android:id="@+id/spinnerSlot1" android:layout_width="0dp"
-                    android:layout_height="48dp" android:layout_weight="1"
-                    android:backgroundTint="#FFFFFF" />
+            <!-- Slot 1 -->
+            <LinearLayout android:id="@+id/layoutSlot1"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:layout_marginBottom="8dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:id="@+id/tvSlot1" android:layout_width="100dp"
+                        android:layout_height="wrap_content" android:text="Slot 2"
+                        android:textColor="#FFFFFF" />
+                    <Spinner android:id="@+id/spinnerSlot1" android:layout_width="0dp"
+                        android:layout_height="48dp" android:layout_weight="1"
+                        android:backgroundTint="#FFFFFF" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/displayTypeRow1"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical"
+                    android:paddingStart="100dp" android:paddingTop="4dp" android:visibility="gone">
+                    <Button android:id="@+id/btnDisplayN1" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="N"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnDisplayArc1" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="Arc"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnDisplayBar1" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="Bar"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="8dp" />
+                    <EditText android:id="@+id/etMin1" android:layout_width="64dp"
+                        android:layout_height="36dp" android:hint="Min"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="#FFFFFF" android:textColorHint="#666666"
+                        android:textSize="12sp" android:layout_marginEnd="4dp"
+                        android:visibility="gone" />
+                    <EditText android:id="@+id/etMax1" android:layout_width="64dp"
+                        android:layout_height="36dp" android:hint="Max"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="#FFFFFF" android:textColorHint="#666666"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:layout_marginBottom="8dp"
-                android:gravity="center_vertical">
-                <TextView android:id="@+id/tvSlot2" android:layout_width="100dp"
-                    android:layout_height="wrap_content" android:text="Slot 3"
-                    android:textColor="#FFFFFF" />
-                <Spinner android:id="@+id/spinnerSlot2" android:layout_width="0dp"
-                    android:layout_height="48dp" android:layout_weight="1"
-                    android:backgroundTint="#FFFFFF" />
+            <!-- Slot 2 -->
+            <LinearLayout android:id="@+id/layoutSlot2"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:layout_marginBottom="8dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:id="@+id/tvSlot2" android:layout_width="100dp"
+                        android:layout_height="wrap_content" android:text="Slot 3"
+                        android:textColor="#FFFFFF" />
+                    <Spinner android:id="@+id/spinnerSlot2" android:layout_width="0dp"
+                        android:layout_height="48dp" android:layout_weight="1"
+                        android:backgroundTint="#FFFFFF" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/displayTypeRow2"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical"
+                    android:paddingStart="100dp" android:paddingTop="4dp" android:visibility="gone">
+                    <Button android:id="@+id/btnDisplayN2" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="N"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnDisplayArc2" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="Arc"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnDisplayBar2" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="Bar"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="8dp" />
+                    <EditText android:id="@+id/etMin2" android:layout_width="64dp"
+                        android:layout_height="36dp" android:hint="Min"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="#FFFFFF" android:textColorHint="#666666"
+                        android:textSize="12sp" android:layout_marginEnd="4dp"
+                        android:visibility="gone" />
+                    <EditText android:id="@+id/etMax2" android:layout_width="64dp"
+                        android:layout_height="36dp" android:hint="Max"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="#FFFFFF" android:textColorHint="#666666"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:layout_marginBottom="8dp"
-                android:gravity="center_vertical">
-                <TextView android:id="@+id/tvSlot3" android:layout_width="100dp"
-                    android:layout_height="wrap_content" android:text="Slot 4"
-                    android:textColor="#FFFFFF" />
-                <Spinner android:id="@+id/spinnerSlot3" android:layout_width="0dp"
-                    android:layout_height="48dp" android:layout_weight="1"
-                    android:backgroundTint="#FFFFFF" />
+            <!-- Slot 3 -->
+            <LinearLayout android:id="@+id/layoutSlot3"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:layout_marginBottom="8dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:id="@+id/tvSlot3" android:layout_width="100dp"
+                        android:layout_height="wrap_content" android:text="Slot 4"
+                        android:textColor="#FFFFFF" />
+                    <Spinner android:id="@+id/spinnerSlot3" android:layout_width="0dp"
+                        android:layout_height="48dp" android:layout_weight="1"
+                        android:backgroundTint="#FFFFFF" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/displayTypeRow3"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical"
+                    android:paddingStart="100dp" android:paddingTop="4dp" android:visibility="gone">
+                    <Button android:id="@+id/btnDisplayN3" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="N"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnDisplayArc3" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="Arc"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnDisplayBar3" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="Bar"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="8dp" />
+                    <EditText android:id="@+id/etMin3" android:layout_width="64dp"
+                        android:layout_height="36dp" android:hint="Min"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="#FFFFFF" android:textColorHint="#666666"
+                        android:textSize="12sp" android:layout_marginEnd="4dp"
+                        android:visibility="gone" />
+                    <EditText android:id="@+id/etMax3" android:layout_width="64dp"
+                        android:layout_height="36dp" android:hint="Max"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="#FFFFFF" android:textColorHint="#666666"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Slots 4 & 5 — only visible in 2x3 layout -->
             <LinearLayout android:id="@+id/layoutSlot4" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:orientation="horizontal"
-                android:layout_marginBottom="8dp" android:gravity="center_vertical"
+                android:layout_height="wrap_content" android:orientation="vertical"
+                android:layout_marginBottom="8dp"
                 android:visibility="gone">
-                <TextView android:id="@+id/tvSlot4" android:layout_width="100dp"
-                    android:layout_height="wrap_content" android:text="Slot 5"
-                    android:textColor="#FFFFFF" />
-                <Spinner android:id="@+id/spinnerSlot4" android:layout_width="0dp"
-                    android:layout_height="48dp" android:layout_weight="1"
-                    android:backgroundTint="#FFFFFF" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:id="@+id/tvSlot4" android:layout_width="100dp"
+                        android:layout_height="wrap_content" android:text="Slot 5"
+                        android:textColor="#FFFFFF" />
+                    <Spinner android:id="@+id/spinnerSlot4" android:layout_width="0dp"
+                        android:layout_height="48dp" android:layout_weight="1"
+                        android:backgroundTint="#FFFFFF" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/displayTypeRow4"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical"
+                    android:paddingStart="100dp" android:paddingTop="4dp" android:visibility="gone">
+                    <Button android:id="@+id/btnDisplayN4" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="N"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnDisplayArc4" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="Arc"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnDisplayBar4" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="Bar"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="8dp" />
+                    <EditText android:id="@+id/etMin4" android:layout_width="64dp"
+                        android:layout_height="36dp" android:hint="Min"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="#FFFFFF" android:textColorHint="#666666"
+                        android:textSize="12sp" android:layout_marginEnd="4dp"
+                        android:visibility="gone" />
+                    <EditText android:id="@+id/etMax4" android:layout_width="64dp"
+                        android:layout_height="36dp" android:hint="Max"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="#FFFFFF" android:textColorHint="#666666"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout android:id="@+id/layoutSlot5" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:orientation="horizontal"
-                android:layout_marginBottom="8dp" android:gravity="center_vertical"
+                android:layout_height="wrap_content" android:orientation="vertical"
+                android:layout_marginBottom="8dp"
                 android:visibility="gone">
-                <TextView android:id="@+id/tvSlot5" android:layout_width="100dp"
-                    android:layout_height="wrap_content" android:text="Slot 6"
-                    android:textColor="#FFFFFF" />
-                <Spinner android:id="@+id/spinnerSlot5" android:layout_width="0dp"
-                    android:layout_height="48dp" android:layout_weight="1"
-                    android:backgroundTint="#FFFFFF" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:id="@+id/tvSlot5" android:layout_width="100dp"
+                        android:layout_height="wrap_content" android:text="Slot 6"
+                        android:textColor="#FFFFFF" />
+                    <Spinner android:id="@+id/spinnerSlot5" android:layout_width="0dp"
+                        android:layout_height="48dp" android:layout_weight="1"
+                        android:backgroundTint="#FFFFFF" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/displayTypeRow5"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical"
+                    android:paddingStart="100dp" android:paddingTop="4dp" android:visibility="gone">
+                    <Button android:id="@+id/btnDisplayN5" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="N"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnDisplayArc5" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="Arc"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnDisplayBar5" android:layout_width="wrap_content"
+                        android:layout_height="36dp" android:text="Bar"
+                        android:backgroundTint="#444444" android:textColor="#FFFFFF"
+                        android:textSize="12sp" android:layout_marginEnd="8dp" />
+                    <EditText android:id="@+id/etMin5" android:layout_width="64dp"
+                        android:layout_height="36dp" android:hint="Min"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="#FFFFFF" android:textColorHint="#666666"
+                        android:textSize="12sp" android:layout_marginEnd="4dp"
+                        android:visibility="gone" />
+                    <EditText android:id="@+id/etMax5" android:layout_width="64dp"
+                        android:layout_height="36dp" android:hint="Max"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="#FFFFFF" android:textColorHint="#666666"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
