@@ -210,16 +210,16 @@ class DashboardView @JvmOverloads constructor(
             val splitX = w * 0.58f
             canvas.save()
             canvas.clipRect(0f, 0f, splitX, h)
-            renderer.draw(canvas, slots, gaugeLayout, theme)
+            renderer.draw(canvas, slots, gaugeLayout, theme, splitX, h)
             canvas.restore()
             dividerPaint.color = theme.accent
             canvas.drawLine(splitX, h * 0.05f, splitX, h * 0.95f, dividerPaint)
             drawMediaStrip(canvas, splitX, 0f, w, h)
         } else {
-            val splitY = h * 0.58f
+            val splitY = h * 0.50f
             canvas.save()
             canvas.clipRect(0f, 0f, w, splitY)
-            renderer.draw(canvas, slots, gaugeLayout, theme)
+            renderer.draw(canvas, slots, gaugeLayout, theme, w, splitY)
             canvas.restore()
             dividerPaint.color = theme.accent
             canvas.drawLine(w * 0.05f, splitY, w * 0.95f, splitY, dividerPaint)

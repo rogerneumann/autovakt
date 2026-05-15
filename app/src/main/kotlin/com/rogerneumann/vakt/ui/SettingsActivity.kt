@@ -34,6 +34,7 @@ import com.rogerneumann.vakt.data.UnitSystem
 import com.rogerneumann.vakt.data.VehicleLayoutManager
 import com.rogerneumann.vakt.data.VehicleProfileHub
 import com.rogerneumann.vakt.data.VehicleProfileManager
+import com.rogerneumann.vakt.BuildConfig
 import com.rogerneumann.vakt.databinding.ActivitySettingsBinding
 import com.rogerneumann.vakt.obd2.VaktBridgeServer
 import com.rogerneumann.vakt.util.LogShareManager
@@ -81,6 +82,7 @@ class SettingsActivity : AppCompatActivity() {
         setupImportButton()
         setupShareLogsButton()
         setupSaveButton()
+        binding.tvVersion.text = "Vakt v${BuildConfig.VERSION_NAME}"
     }
 
     // ── Dashboard Layout section ──────────────────────────────────────────────

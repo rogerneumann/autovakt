@@ -50,20 +50,19 @@ class GaugeRenderer {
         canvas: Canvas,
         slots: List<GaugeSlot>,
         layout: GaugeLayout,
-        theme: GaugeTheme
+        theme: GaugeTheme,
+        w: Float = canvas.width.toFloat(),
+        h: Float = canvas.height.toFloat()
     ) {
         t = theme
         textPaint.color = t.text
         canvas.drawColor(t.background)
 
-        val w = canvas.width.toFloat()
-        val h = canvas.height.toFloat()
-
         when (layout) {
-            GaugeLayout.GRID_2  -> drawSlotGrid2(canvas, slots, w, h)
-            GaugeLayout.GRID_4  -> drawSlotGrid4(canvas, slots, w, h)
+            GaugeLayout.GRID_2   -> drawSlotGrid2(canvas, slots, w, h)
+            GaugeLayout.GRID_4   -> drawSlotGrid4(canvas, slots, w, h)
             GaugeLayout.GRID_2x3 -> drawSlotGrid2x3(canvas, slots, w, h)
-            GaugeLayout.ARC     -> drawSlotArc(canvas, slots, w, h)
+            GaugeLayout.ARC      -> drawSlotArc(canvas, slots, w, h)
         }
 
         textPaint.color = t.text

@@ -36,7 +36,9 @@ import com.rogerneumann.vakt.obd2.ConnectionState
 import com.rogerneumann.vakt.service.OBD2ForegroundService
 import com.rogerneumann.vakt.ui.history.HistoryActivity
 import com.rogerneumann.vakt.ui.scan.DeviceScanFragment
+import com.rogerneumann.vakt.BuildConfig
 import com.rogerneumann.vakt.util.LogShareManager
+import com.rogerneumann.vakt.util.UpdateChecker
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -93,6 +95,7 @@ class MainActivity : AppCompatActivity() {
         requestRequiredPermissions()
         setupDrawer()
         setupHamburgerReveal()
+        setupNavVersion()
         setupDemoEasterEgg()
         binding.dashboardView.vehicleLayoutManager = vehicleLayoutManager
         observeLiveData()
@@ -195,6 +198,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun cancelHamburgerHide() {
         binding.btnHamburger.removeCallbacks(hideHamburgerRunnable)
+    }
+
+    private fun setupNavVersion() {
+        val header = binding.navigationView.getHeaderView(0)
+        header.findViewById<TextView>(R.id.navHeaderVersion).text = "v${BuildConfig.VERSION_NAME}"
+
+        UpdateChecker.check(BuildConfig.VERSION_NAME) { newVersion ->
+            Toast.makeText(this, "Update available: v$newVersion — get it from GitHub Releases", Toast.LENGTH_LONG).show()
+        }
     }
 
     // Hidden easter egg: tap "VAKT" in the nav drawer header 5 times to toggle Demo Mode

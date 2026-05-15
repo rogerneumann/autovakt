@@ -5,6 +5,9 @@ plugins {
     id 'com.google.dagger.hilt.android'
 }
 
+def buildDate = new Date().format('yyyy.MM.dd')
+def buildCode = new Date().format('yyyyMMdd').toInteger()
+
 android {
     namespace 'com.rogerneumann.vakt'
     compileSdk 34
@@ -13,8 +16,8 @@ android {
         applicationId "com.rogerneumann.vakt"
         minSdk 26
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode buildCode
+        versionName buildDate
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -34,6 +37,49 @@ android {
     }
     buildFeatures {
         viewBinding true
+        buildConfig true
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "vakt-${buildDate}-${variant.buildType.name}.apk"
+        }
+    }
+}
+
+// ── GitHub Release publisher ─────────────────────────────────────────────────
+// Usage: ./gradlew publishRelease
+// Requires: gh CLI authenticated (gh auth login)
+// Same-day rebuilds overwrite the existing release asset automatically.
+task publishRelease(dependsOn: 'assembleDebug') {
+    group = 'publishing'
+    description = 'Assembles the debug APK and creates/updates a GitHub Release.'
+    doLast {
+        def apk = "${buildDir}/outputs/apk/debug/vakt-${buildDate}-debug.apk"
+        def tag  = "v${buildDate}"
+
+        def releaseExists = exec {
+            workingDir rootDir
+            commandLine 'gh', 'release', 'view', tag
+            ignoreExitValue = true
+        }.exitValue == 0
+
+        if (releaseExists) {
+            println "Release ${tag} already exists — uploading updated APK."
+            exec {
+                workingDir rootDir
+                commandLine 'gh', 'release', 'upload', tag, apk, '--clobber'
+            }
+        } else {
+            println "Creating new release ${tag}."
+            exec {
+                workingDir rootDir
+                commandLine 'gh', 'release', 'create', tag,
+                    '--title', "Vakt ${buildDate}",
+                    '--notes', "Build ${buildDate}",
+                    apk
+            }
+        }
     }
 }
 

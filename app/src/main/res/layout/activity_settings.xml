@@ -764,5 +764,16 @@
             android:backgroundTint="#00E676"
             android:textColor="#000000" />
 
+        <TextView
+            android:id="@+id/tvVersion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Vakt v--"
+            android:textColor="#333333"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp" />
+
     </LinearLayout>
 </ScrollView>
