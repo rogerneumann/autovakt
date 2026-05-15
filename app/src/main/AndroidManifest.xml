@@ -53,6 +53,12 @@
             android:label="Trip History"
             android:theme="@style/Theme.Vakt" />
 
+        <activity
+            android:name=".ui.vehicles.SavedVehiclesActivity"
+            android:exported="false"
+            android:label="Saved Vehicles"
+            android:theme="@style/Theme.Vakt" />
+
         <!-- Android Auto: Full-Screen Dashboard -->
         <service
             android:name=".auto.VaktCarAppService"
