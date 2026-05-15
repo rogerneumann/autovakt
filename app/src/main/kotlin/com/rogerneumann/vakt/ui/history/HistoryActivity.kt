@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -48,15 +49,31 @@ class HistoryActivity : AppCompatActivity() {
     // ── Layout (inline to avoid adding an extra XML file) ────────────────────
 
     private fun buildLayout(): View {
-        val context = this
+        val bg = android.graphics.Color.parseColor("#0A0A0A")
 
-        val recycler = RecyclerView(context).apply {
-            layoutManager = LinearLayoutManager(context)
-            setBackgroundColor(android.graphics.Color.parseColor("#0A0A0A"))
-            id = View.generateViewId()
+        // ── DTC fault-code section ────────────────────────────────────────────
+        val dtcListView = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val dtcSection = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(android.graphics.Color.parseColor("#1A0000"))
+            setPadding(32, 20, 32, 12)
+            visibility = View.GONE
+            addView(TextView(context).apply {
+                text = "⚠  Active Fault Codes"
+                textSize = 12f
+                setTextColor(android.graphics.Color.parseColor("#FF5252"))
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                setPadding(0, 0, 0, 12)
+            })
+            addView(dtcListView)
         }
 
-        val emptyView = TextView(context).apply {
+        // ── Trip list ─────────────────────────────────────────────────────────
+        val recycler = RecyclerView(this).apply {
+            layoutManager = LinearLayoutManager(this@HistoryActivity)
+            setBackgroundColor(bg)
+        }
+        val emptyView = TextView(this).apply {
             text = "No trips recorded yet.\n\nStart an OBD2 session to begin logging."
             textSize = 16f
             setTextColor(android.graphics.Color.parseColor("#888888"))
@@ -64,9 +81,8 @@ class HistoryActivity : AppCompatActivity() {
             setPadding(48, 96, 48, 48)
             visibility = View.GONE
         }
-
-        val frame = android.widget.FrameLayout(context).apply {
-            setBackgroundColor(android.graphics.Color.parseColor("#0A0A0A"))
+        val tripFrame = android.widget.FrameLayout(this).apply {
+            setBackgroundColor(bg)
             addView(recycler, android.widget.FrameLayout.LayoutParams(
                 android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
                 android.widget.FrameLayout.LayoutParams.MATCH_PARENT
@@ -75,6 +91,16 @@ class HistoryActivity : AppCompatActivity() {
                 android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
                 android.widget.FrameLayout.LayoutParams.MATCH_PARENT
             ))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+            )
+        }
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(bg)
+            addView(dtcSection)
+            addView(tripFrame)
         }
 
         val adapter = TripAdapter()
@@ -84,11 +110,38 @@ class HistoryActivity : AppCompatActivity() {
             viewModel.trips.collectLatest { trips ->
                 adapter.submitList(trips)
                 emptyView.visibility = if (trips.isEmpty()) View.VISIBLE else View.GONE
-                recycler.visibility  = if (trips.isEmpty()) View.GONE  else View.VISIBLE
+                recycler.visibility  = if (trips.isEmpty()) View.GONE   else View.VISIBLE
             }
         }
 
-        return frame
+        lifecycleScope.launch {
+            viewModel.dtcs.collectLatest { dtcs ->
+                dtcSection.visibility = if (dtcs.isEmpty()) View.GONE else View.VISIBLE
+                dtcListView.removeAllViews()
+                dtcs.forEach { dtc ->
+                    dtcListView.addView(LinearLayout(this@HistoryActivity).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        setPadding(0, 4, 0, 4)
+                        addView(TextView(context).apply {
+                            text = dtc.code
+                            textSize = 14f
+                            setTextColor(android.graphics.Color.parseColor("#FF8A80"))
+                            typeface = android.graphics.Typeface.MONOSPACE
+                            layoutParams = LinearLayout.LayoutParams(0,
+                                LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                        })
+                        addView(TextView(context).apply {
+                            text = dtc.timestampLabel
+                            textSize = 12f
+                            setTextColor(android.graphics.Color.parseColor("#666666"))
+                            gravity = android.view.Gravity.END
+                        })
+                    })
+                }
+            }
+        }
+
+        return root
     }
 }
 

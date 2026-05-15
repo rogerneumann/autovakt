@@ -3,12 +3,16 @@ package com.rogerneumann.vakt.ui.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rogerneumann.vakt.data.TripRepository
+import com.rogerneumann.vakt.db.DtcEntity
 import com.rogerneumann.vakt.db.TripEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -27,7 +31,27 @@ class HistoryViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    val dtcs: StateFlow<List<DtcUiModel>> = repository.getAllActiveDtcs()
+        .map { list -> list.map { it.toUiModel() } }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 }
+
+data class DtcUiModel(
+    val code: String,
+    val timestampLabel: String,
+    val vin: String
+)
+
+private fun DtcEntity.toUiModel() = DtcUiModel(
+    code = code,
+    timestampLabel = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(timestamp)),
+    vin = vin
+)
 
 /**
  * Presentation model — keeps all formatting logic out of the View.

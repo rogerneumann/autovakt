@@ -40,7 +40,6 @@ import com.rogerneumann.vakt.obd2.VaktBridgeServer
 import com.rogerneumann.vakt.util.LogShareManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -70,6 +69,12 @@ class SettingsActivity : AppCompatActivity() {
             binding.switchUseLocation.isChecked = false
             Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private val filePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { importProfileFromFile(it) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -582,7 +587,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun importProfileFromUrl(url: String) {
-        GlobalScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val jsonString = downloadJson(url)
                 profileHub.importProfileFromJson(jsonString)
@@ -600,25 +605,11 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun startFilePicker() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "application/json"
-        }
-        @Suppress("DEPRECATION")
-        startActivityForResult(intent, IMPORT_FILE_REQUEST_CODE)
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        @Suppress("DEPRECATION")
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == IMPORT_FILE_REQUEST_CODE && resultCode == RESULT_OK) {
-            data?.data?.let { uri -> importProfileFromFile(uri) }
-        }
+        filePickerLauncher.launch(arrayOf("application/json"))
     }
 
     private fun importProfileFromFile(uri: Uri) {
-        GlobalScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val jsonString = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
                     ?: throw Exception("Could not read file")
@@ -743,7 +734,4 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    companion object {
-        private const val IMPORT_FILE_REQUEST_CODE = 42
-    }
 }

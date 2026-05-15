@@ -1,6 +1,7 @@
 package com.rogerneumann.vakt.data
 
 import android.content.Context
+import com.rogerneumann.vakt.db.DtcEntity
 import com.rogerneumann.vakt.db.TripDao
 import com.rogerneumann.vakt.db.TripEntity
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -64,4 +65,13 @@ class TripRepository @Inject constructor(
     }
 
     fun getAllTrips(): Flow<List<TripEntity>> = tripDao.getAllTrips()
+
+    /** Inserts a DTC only if not already active for this VIN, avoiding duplicates on reconnect. */
+    suspend fun insertDtc(vin: String, code: String) {
+        if (tripDao.countActiveDtc(vin, code) == 0) {
+            tripDao.insertDtc(DtcEntity(vin = vin, timestamp = System.currentTimeMillis(), code = code))
+        }
+    }
+
+    fun getAllActiveDtcs(): Flow<List<DtcEntity>> = tripDao.getAllActiveDtcs()
 }

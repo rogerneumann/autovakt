@@ -95,6 +95,34 @@ object ObdParser {
     }
 
     /**
+     * Parses a Mode 03 "Request Stored DTCs" response into standard DTC code strings.
+     * Response format: "43 XX YY ZZ WW ..." — each byte pair is one DTC.
+     * Returns codes like "P0133", "C0035", "B0001", "U0100".
+     */
+    fun parseDtcResponse(response: String): List<String> {
+        val clean = response.replace(" ", "").trim().uppercase()
+        if (!clean.startsWith("43")) return emptyList()
+        val payload = clean.substring(2)
+        val codes = mutableListOf<String>()
+        var i = 0
+        while (i + 3 < payload.length) {
+            val b1 = payload.substring(i, i + 2).toIntOrNull(16) ?: break
+            val b2 = payload.substring(i + 2, i + 4).toIntOrNull(16) ?: break
+            i += 4
+            if (b1 == 0 && b2 == 0) continue // zero-padding, no DTC
+            val system = when ((b1 shr 6) and 0x03) {
+                0 -> "P"; 1 -> "C"; 2 -> "B"; else -> "U"
+            }
+            val d1 = ((b1 shr 4) and 0x03).toString()
+            val d2 = (b1 and 0x0F).toString(16).uppercase()
+            val d3 = ((b2 shr 4) and 0x0F).toString(16).uppercase()
+            val d4 = (b2 and 0x0F).toString(16).uppercase()
+            codes.add("$system$d1$d2$d3$d4")
+        }
+        return codes
+    }
+
+    /**
      * Helper to extract the payload bytes after the expected header/PID response.
      */
     private fun extractPayload(rawResponse: String, expectedPrefix: String): ByteArray? {

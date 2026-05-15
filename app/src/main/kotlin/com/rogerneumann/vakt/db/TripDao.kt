@@ -29,4 +29,10 @@ interface TripDao {
 
     @Query("SELECT * FROM dtc_logs WHERE vin = :vin ORDER BY timestamp DESC")
     fun getDtcHistoryForVin(vin: String): Flow<List<DtcEntity>>
+
+    @Query("SELECT * FROM dtc_logs WHERE isCleared = 0 ORDER BY timestamp DESC")
+    fun getAllActiveDtcs(): Flow<List<DtcEntity>>
+
+    @Query("SELECT COUNT(*) FROM dtc_logs WHERE vin = :vin AND code = :code AND isCleared = 0")
+    suspend fun countActiveDtc(vin: String, code: String): Int
 }

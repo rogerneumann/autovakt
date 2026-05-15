@@ -131,6 +131,9 @@ class OBD2Repository @Inject constructor(
                 queue.execute(cmd)
             }
 
+            // Poll for stored DTCs once at connection time
+            pollAndSaveDtcs(vin ?: "")
+
             _liveData.value = _liveData.value.copy(
                 vehicleProfile = vehicleProfile,
                 connectionState = ConnectionState.Connected
@@ -252,6 +255,17 @@ class OBD2Repository @Inject constructor(
                 startSoc = _liveData.value.soc ?: 0f
             )
         }
+    }
+
+    private suspend fun pollAndSaveDtcs(vin: String) {
+        try {
+            queue.execute("ATSH 7DF") // broadcast header for generic Mode 03
+            val response = queue.execute("03")
+            val codes = ObdParser.parseDtcResponse(response)
+            for (code in codes) {
+                tripRepository.insertDtc(vin, code)
+            }
+        } catch (_: Exception) { /* best-effort — don't fail the connection */ }
     }
 
     private fun extractRawBytes(response: String, command: String): ByteArray? {
