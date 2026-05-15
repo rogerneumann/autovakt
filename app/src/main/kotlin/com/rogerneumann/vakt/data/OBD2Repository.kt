@@ -6,6 +6,7 @@ import com.rogerneumann.vakt.obd2.GmProtocolHandler
 import com.rogerneumann.vakt.obd2.ObdParser
 import com.rogerneumann.vakt.obd2.PidFormulaParser
 import com.rogerneumann.vakt.obd2.TransportDelegate
+import com.rogerneumann.vakt.obd2.VaktBridgeServer
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +24,9 @@ class OBD2Repository @Inject constructor(
     private val tripRepository: TripRepository,
     private val profileManager: VehicleProfileManager,
     private val profileHub: VehicleProfileHub,
-    private val vehicleLayoutManager: VehicleLayoutManager
+    private val vehicleLayoutManager: VehicleLayoutManager,
+    private val pidCache: PidCache,
+    private val bridgeServer: VaktBridgeServer
 ) {
     private val _liveData = MutableStateFlow(VaktLiveData())
     val liveData: StateFlow<VaktLiveData> = _liveData.asStateFlow()
@@ -158,8 +161,15 @@ class OBD2Repository @Inject constructor(
         var hvVoltage: Float? = null
         var hvCurrent: Float? = null
 
+        // PIDs actively requested by bridge clients (union with display-slot PIDs)
+        val bridgePids = bridgeServer.bridgeRequestedPids
+
         for (pid in profile.customPids) {
             try {
+                // Skip if a very fresh cache entry exists and this isn't a bridge-demanded PID
+                if (pidCache.get(pid.shortName, 2000L) != null && !bridgePids.contains(pid.shortName)) {
+                    continue
+                }
                 if (!pid.header.isNullOrEmpty()) {
                     queue.execute("ATSH ${pid.header}")
                 }
@@ -167,6 +177,9 @@ class OBD2Repository @Inject constructor(
                 val bytes = extractRawBytes(response, pid.modeAndPid) ?: continue
                 val value = PidFormulaParser.evaluate(pid.equation, bytes, pid.nonLinearMap)
                 updatedCustom[pid.shortName] = value
+
+                // Write raw response to cache for bridge consumers
+                pidCache.put(pid.shortName, response)
 
                 // Track specific shortNames for derived calculations
                 when (pid.shortName) {
