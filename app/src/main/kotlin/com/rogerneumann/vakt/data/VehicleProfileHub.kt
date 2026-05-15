@@ -116,6 +116,11 @@ class VehicleProfileHub @Inject constructor(
             for (i in 0 until arr.length()) add(arr.getString(i))
         }
 
+        val defaultSlots = buildList {
+            val arr = json.optJSONArray("defaultSlots") ?: return@buildList
+            for (i in 0 until arr.length()) add(arr.getString(i))
+        }
+
         return VehicleProfile(
             id = json.getString("id"),
             make = json.optString("make"),
@@ -125,7 +130,8 @@ class VehicleProfileHub @Inject constructor(
             powertrain = PowertrainType.valueOf(json.optString("powertrain", "UNKNOWN")),
             customPids = customPids,
             initCommands = initCommands,
-            vinPatterns = vinPatterns
+            vinPatterns = vinPatterns,
+            defaultSlots = defaultSlots
         )
     }
 
