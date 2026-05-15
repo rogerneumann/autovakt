@@ -32,3 +32,6 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Dev artifacts — kept in ai-md_storage, not in this repo
+preview/
