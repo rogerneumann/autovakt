@@ -52,12 +52,19 @@
         android:visibility="visible" />
 
     <!-- Device list -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvDevices"
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:minHeight="200dp" />
+        android:minHeight="200dp">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvDevices"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <!-- Cancel button -->
     <Button

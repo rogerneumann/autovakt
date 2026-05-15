@@ -1,17 +1,20 @@
 package com.rogerneumann.vakt.ui.scan
 
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.rogerneumann.vakt.databinding.FragmentDeviceScanBinding
 import com.rogerneumann.vakt.obd2.TransportDelegate
+import com.rogerneumann.vakt.service.OBD2ForegroundService
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -66,12 +69,17 @@ class DeviceScanFragment : BottomSheetDialogFragment() {
         binding.btnRefresh.setOnClickListener {
             viewModel.startScan()
         }
+
+        binding.swipeRefresh.setOnRefreshListener {
+            viewModel.startScan()
+        }
     }
 
     private fun observeScanState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.scanState.collect { state ->
                 adapter.submitList(state.devices)
+                binding.swipeRefresh.isRefreshing = state.isScanning
 
                 if (state.isScanning) {
                     binding.tvStatus.text = "Scanning for devices..."
@@ -97,19 +105,20 @@ class DeviceScanFragment : BottomSheetDialogFragment() {
         try {
             viewModel.stopScan()
 
-            // Save device info to SharedPreferences
             sharedPreferences.edit().apply {
                 putString("saved_device_address", device.address)
                 putString("saved_device_type", device.type.name)
                 apply()
             }
 
-            // Set transport based on device type
-            // Note: In a real implementation, we'd create the appropriate transport instance
-            // For now, we'll just store the preference and the foreground service will pick it up
+            ContextCompat.startForegroundService(
+                requireContext(),
+                Intent(requireContext(), OBD2ForegroundService::class.java)
+            )
+
             Toast.makeText(
                 requireContext(),
-                "Connected to ${device.name}",
+                "Connecting to ${device.name}…",
                 Toast.LENGTH_SHORT
             ).show()
 

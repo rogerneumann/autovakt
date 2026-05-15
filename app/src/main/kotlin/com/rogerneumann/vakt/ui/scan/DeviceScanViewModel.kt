@@ -49,6 +49,7 @@ class DeviceScanViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val deviceMap = mutableMapOf<String, ScannedDevice>()
+    private var receiverRegistered = false
 
     private val _scanState = MutableStateFlow(ScanState())
     val scanState: StateFlow<ScanState> = _scanState.asStateFlow()
@@ -141,7 +142,10 @@ class DeviceScanViewModel @Inject constructor(
     fun stopScan() {
         try {
             bluetoothAdapter?.cancelDiscovery()
-            context.unregisterReceiver(discoveryReceiver)
+            if (receiverRegistered) {
+                context.unregisterReceiver(discoveryReceiver)
+                receiverRegistered = false
+            }
             bleScanner?.stopScan(bleScanCallback)
             _scanState.value = _scanState.value.copy(isScanning = false)
         } catch (e: Exception) {
@@ -155,6 +159,7 @@ class DeviceScanViewModel @Inject constructor(
         val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
         try {
             context.registerReceiver(discoveryReceiver, filter, Context.RECEIVER_EXPORTED)
+            receiverRegistered = true
             bluetoothAdapter?.startDiscovery()
         } catch (e: Exception) {
             _scanState.value = _scanState.value.copy(error = "Classic scan failed: ${e.message}")
@@ -176,7 +181,7 @@ class DeviceScanViewModel @Inject constructor(
 
     private fun updateDeviceList() {
         _scanState.value = _scanState.value.copy(
-            devices = deviceMap.values.sortedByDescending { it.rssi }
+            devices = deviceMap.values.sortedByDescending { it.rssi }.take(10)
         )
     }
 

@@ -204,15 +204,27 @@ class DashboardView @JvmOverloads constructor(
     }
 
     private fun drawSplit(canvas: Canvas, w: Float, h: Float, slots: List<GaugeSlot>) {
-        val splitY = h * 0.58f
         canvas.drawColor(theme.background)
-        canvas.save()
-        canvas.clipRect(0f, 0f, w, splitY)
-        renderer.draw(canvas, slots, gaugeLayout, theme)
-        canvas.restore()
-        dividerPaint.color = theme.accent
-        canvas.drawLine(w * 0.05f, splitY, w * 0.95f, splitY, dividerPaint)
-        drawMediaStrip(canvas, 0f, splitY, w, h)
+        val isLandscape = w > h
+        if (isLandscape) {
+            val splitX = w * 0.58f
+            canvas.save()
+            canvas.clipRect(0f, 0f, splitX, h)
+            renderer.draw(canvas, slots, gaugeLayout, theme)
+            canvas.restore()
+            dividerPaint.color = theme.accent
+            canvas.drawLine(splitX, h * 0.05f, splitX, h * 0.95f, dividerPaint)
+            drawMediaStrip(canvas, splitX, 0f, w, h)
+        } else {
+            val splitY = h * 0.58f
+            canvas.save()
+            canvas.clipRect(0f, 0f, w, splitY)
+            renderer.draw(canvas, slots, gaugeLayout, theme)
+            canvas.restore()
+            dividerPaint.color = theme.accent
+            canvas.drawLine(w * 0.05f, splitY, w * 0.95f, splitY, dividerPaint)
+            drawMediaStrip(canvas, 0f, splitY, w, h)
+        }
     }
 
     private fun drawMediaStrip(canvas: Canvas, x0: Float, y0: Float, x1: Float, y1: Float) {

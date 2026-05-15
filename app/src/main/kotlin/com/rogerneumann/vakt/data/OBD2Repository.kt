@@ -87,7 +87,15 @@ class OBD2Repository @Inject constructor(
     }
 
     private suspend fun runLiveLoop() {
-        if (transport.connectionState.value !is ConnectionState.Connected) return
+        // BLE GATT setup (service discovery + MTU) can take several seconds after connect()
+        // returns. Wait up to 20s for the transport to reach Connected before starting.
+        val deadline = System.currentTimeMillis() + 20_000L
+        while (transport.connectionState.value !is ConnectionState.Connected) {
+            if (transport.connectionState.value is ConnectionState.Error
+                || System.currentTimeMillis() > deadline
+            ) return
+            delay(300)
+        }
 
         try {
             queue.execute("ATZ")
