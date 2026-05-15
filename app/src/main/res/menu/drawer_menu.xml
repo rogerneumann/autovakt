@@ -11,6 +11,11 @@
         android:title="Disconnect"
         android:visible="false" />
     <item
+        android:id="@+id/nav_change_adapter"
+        android:icon="@drawable/ic_swap_24"
+        android:title="Change Adapter"
+        android:visible="false" />
+    <item
         android:id="@+id/nav_stop_trip"
         android:icon="@drawable/ic_stop_24"
         android:title="Stop Trip" />

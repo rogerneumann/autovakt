@@ -147,12 +147,13 @@ class MainActivity : AppCompatActivity() {
         binding.navigationView.setNavigationItemSelectedListener { item ->
             binding.drawerLayout.closeDrawers()
             when (item.itemId) {
-                R.id.nav_connect    -> onConnectClicked()
-                R.id.nav_disconnect -> onDisconnectClicked()
-                R.id.nav_stop_trip  -> viewModel.stopTrip()
-                R.id.nav_settings   -> startActivity(Intent(this, SettingsActivity::class.java))
-                R.id.nav_history    -> startActivity(Intent(this, HistoryActivity::class.java))
-                R.id.nav_demo       -> toggleDemoMode()
+                R.id.nav_connect        -> onConnectClicked()
+                R.id.nav_disconnect     -> onDisconnectClicked()
+                R.id.nav_change_adapter -> onChangeAdapterClicked()
+                R.id.nav_stop_trip      -> viewModel.stopTrip()
+                R.id.nav_settings       -> startActivity(Intent(this, SettingsActivity::class.java))
+                R.id.nav_history        -> startActivity(Intent(this, HistoryActivity::class.java))
+                R.id.nav_demo           -> toggleDemoMode()
             }
             true
         }
@@ -253,8 +254,10 @@ class MainActivity : AppCompatActivity() {
     private fun updateDrawerState(state: ConnectionState) {
         val menu = binding.navigationView.menu
         val isConnected = state is ConnectionState.Connected
-        menu.findItem(R.id.nav_connect).isVisible    = !isConnected
-        menu.findItem(R.id.nav_disconnect).isVisible = isConnected
+        val hasSaved = sharedPreferences.getString("saved_device_address", null) != null
+        menu.findItem(R.id.nav_connect).isVisible        = !isConnected
+        menu.findItem(R.id.nav_disconnect).isVisible     = isConnected
+        menu.findItem(R.id.nav_change_adapter).isVisible = hasSaved
     }
 
     private fun updatePreConnectionDim(data: com.rogerneumann.vakt.data.VaktLiveData) {
@@ -297,6 +300,15 @@ class MainActivity : AppCompatActivity() {
             binding.tvDemoBadge.visibility = View.GONE
             binding.navigationView.menu.findItem(R.id.nav_demo).isVisible = false
         }
+    }
+
+    private fun onChangeAdapterClicked() {
+        stopService(Intent(this, OBD2ForegroundService::class.java))
+        sharedPreferences.edit()
+            .remove("saved_device_address")
+            .remove("saved_device_type")
+            .apply()
+        DeviceScanFragment().show(supportFragmentManager, "device_scan")
     }
 
     private fun requestRequiredPermissions() {

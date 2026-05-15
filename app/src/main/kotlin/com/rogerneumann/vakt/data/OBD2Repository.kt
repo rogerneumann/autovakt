@@ -1,5 +1,6 @@
 package com.rogerneumann.vakt.data
 
+import com.rogerneumann.vakt.media.MediaRemoteManager
 import com.rogerneumann.vakt.obd2.ConnectionState
 import com.rogerneumann.vakt.obd2.ElmCommandQueue
 import com.rogerneumann.vakt.obd2.GmProtocolHandler
@@ -26,7 +27,8 @@ class OBD2Repository @Inject constructor(
     private val profileHub: VehicleProfileHub,
     private val vehicleLayoutManager: VehicleLayoutManager,
     private val pidCache: PidCache,
-    private val bridgeServer: VaktBridgeServer
+    private val bridgeServer: VaktBridgeServer,
+    private val mediaRemoteManager: MediaRemoteManager
 ) {
     private val _liveData = MutableStateFlow(VaktLiveData())
     val liveData: StateFlow<VaktLiveData> = _liveData.asStateFlow()
@@ -238,6 +240,9 @@ class OBD2Repository @Inject constructor(
             }
             else -> {}
         }
+
+        // Merge live media metadata (song title/artist from active media session)
+        _liveData.value = mediaRemoteManager.injectInto(_liveData.value)
 
         // Auto-start trip when speed exceeds 3 mph and no active trip is running
         val currentSpeed = _liveData.value.speedMph ?: 0f
