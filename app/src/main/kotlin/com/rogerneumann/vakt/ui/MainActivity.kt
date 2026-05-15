@@ -37,7 +37,6 @@ import com.rogerneumann.vakt.service.OBD2ForegroundService
 import com.rogerneumann.vakt.ui.history.HistoryActivity
 import com.rogerneumann.vakt.ui.scan.DeviceScanFragment
 import com.rogerneumann.vakt.util.LogShareManager
-import com.rogerneumann.vakt.util.ShakeDetector
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -62,7 +61,19 @@ class MainActivity : AppCompatActivity() {
     private var hamburgerPulseAnimator: ObjectAnimator? = null
     private var hamburgerDotView: View? = null
 
-    private val shakeDetector by lazy { ShakeDetector(this) { logShareManager.shareLogs(this) } }
+    // Diagnostics tap counter: 5 taps on the hamburger within 2 s → share logs
+    private var diagTapCount = 0
+    private var diagWindowEndMs = 0L
+    private val openDrawerRunnable = Runnable {
+        diagTapCount = 0
+        diagWindowEndMs = 0L
+        hamburgerPulseAnimator?.cancel()
+        hamburgerPulseAnimator = null
+        showHamburgerDot()
+        cancelHamburgerHide()
+        binding.drawerLayout.setDrawerLockMode(androidx.drawerlayout.widget.DrawerLayout.LOCK_MODE_UNLOCKED)
+        binding.drawerLayout.openDrawer(GravityCompat.START)
+    }
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -93,7 +104,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        shakeDetector.start()
         showSwipeHintIfNeeded()
         val hasPairedDevice = sharedPreferences.getString("saved_device_address", null) != null
         if (hasPairedDevice) {
@@ -103,11 +113,6 @@ class MainActivity : AppCompatActivity() {
             startHamburgerPulse()
         }
         promptPendingCrashReportIfNeeded()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        shakeDetector.stop()
     }
 
     private fun promptPendingCrashReportIfNeeded() {
@@ -153,18 +158,29 @@ class MainActivity : AppCompatActivity() {
     private fun setupHamburgerReveal() {
         binding.dashboardView.setOnClickListener { showHamburger() }
         binding.btnHamburger.setOnClickListener {
-            // Stop any active pulse animation on first tap
-            hamburgerPulseAnimator?.cancel()
-            hamburgerPulseAnimator = null
-            showHamburgerDot()
+            val now = System.currentTimeMillis()
+            if (now > diagWindowEndMs) {
+                diagTapCount = 0
+                diagWindowEndMs = now + 2_000L
+            }
+            diagTapCount++
+            binding.btnHamburger.removeCallbacks(openDrawerRunnable)
 
-            cancelHamburgerHide()
-            binding.drawerLayout.setDrawerLockMode(androidx.drawerlayout.widget.DrawerLayout.LOCK_MODE_UNLOCKED)
-            binding.drawerLayout.openDrawer(GravityCompat.START)
+            if (diagTapCount >= 5) {
+                // Diagnostics trigger: cancel any pending drawer open and share logs
+                diagTapCount = 0
+                diagWindowEndMs = 0L
+                logShareManager.shareLogs(this)
+            } else {
+                // Defer drawer open 300 ms so rapid re-taps can accumulate without the
+                // drawer scrim blocking subsequent taps.
+                binding.btnHamburger.postDelayed(openDrawerRunnable, 300L)
+            }
         }
         binding.drawerLayout.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.SimpleDrawerListener() {
             override fun onDrawerClosed(drawerView: View) {
-                // Re-lock after drawer closes so edge swipe doesn't conflict with gestures
+                // Reset counter when user deliberately closes the drawer
+                diagTapCount = 0
                 binding.drawerLayout.setDrawerLockMode(androidx.drawerlayout.widget.DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
                 binding.btnHamburger.animate().alpha(0f).setDuration(300).start()
             }
