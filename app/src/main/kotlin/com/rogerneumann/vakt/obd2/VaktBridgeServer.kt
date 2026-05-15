@@ -1,27 +1,45 @@
 package com.rogerneumann.vakt.obd2
 
+import com.rogerneumann.vakt.data.PidCache
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.net.ServerSocket
 import java.net.Socket
+import java.util.concurrent.CopyOnWriteArraySet
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Vakt Bridge: A local TCP server that emulates a WiFi ELM327 adapter.
- * Allows other apps (like ABRP) to connect to Vakt and receive vehicle data.
+ * Allows other apps (like ABRP, Car Scanner) to connect to Vakt and
+ * receive vehicle data via a shared-polling cache-backed architecture.
  *
- * FIX: Uses a replaceable serverJob so stop()/start() cycles don't destroy
- * the coroutine scope. Each client gets its own child coroutine so the
- * accept loop stays alive for concurrent connections.
+ * Architecture:
+ * - AT commands pass through to ElmCommandQueue directly (no caching).
+ * - PID commands are served from PidCache if fresh (< 3s); otherwise the PID
+ *   is registered in bridgeRequestedPids for OBD2Repository to poll next cycle,
+ *   then the client waits up to 4s for a cache entry to appear.
  */
 @Singleton
 class VaktBridgeServer @Inject constructor(
-    private val queue: ElmCommandQueue
+    private val queue: ElmCommandQueue,
+    private val pidCache: PidCache
 ) {
     // Persistent scope — never cancelled; only individual jobs are.
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var serverJob: Job? = null
     private var serverSocket: ServerSocket? = null
+
+    /**
+     * PIDs actively requested by connected bridge clients.
+     * OBD2Repository unions this set with its display-slot PIDs each cycle.
+     */
+    val bridgeRequestedPids: MutableSet<String> = CopyOnWriteArraySet()
+
+    private val _activeClientCount = MutableStateFlow(0)
+    val activeClientCount: StateFlow<Int> = _activeClientCount.asStateFlow()
 
     /**
      * If false, incoming connections are immediately rejected to maximize
@@ -35,7 +53,6 @@ class VaktBridgeServer @Inject constructor(
      * prevent BindException on restart.
      */
     fun start(port: Int = 35000) {
-        // Cancel previous run cleanly before rebinding.
         serverJob?.cancel()
         closeServerSocket()
 
@@ -46,11 +63,10 @@ class VaktBridgeServer @Inject constructor(
                     val client = try {
                         serverSocket?.accept()
                     } catch (e: Exception) {
-                        break // Socket closed or cancelled
+                        break
                     } ?: break
 
                     if (isBridgeEnabled) {
-                        // Each client runs concurrently as a child of serverJob.
                         launch { handleClient(client) }
                     } else {
                         runCatching { client.close() }
@@ -63,10 +79,18 @@ class VaktBridgeServer @Inject constructor(
     }
 
     /**
-     * Handles an individual TCP client (e.g., ABRP).
-     * "No Massaging" rule: raw command → ELM327 → raw response, no transformation.
+     * Handles an individual TCP client (e.g., ABRP, Car Scanner).
+     *
+     * AT commands bypass the cache and go straight to the ELM queue.
+     * PID commands are served from PidCache when fresh; otherwise registered
+     * for polling and awaited up to 4s.
+     *
+     * "No Massaging" rule: raw bytes are forwarded unmodified.
      */
     private suspend fun handleClient(socket: Socket) {
+        // Per-client set of PIDs it has registered
+        val clientPids = CopyOnWriteArraySet<String>()
+        _activeClientCount.value++
         socket.use { s ->
             val reader = s.getInputStream().bufferedReader()
             val writer = s.getOutputStream().bufferedWriter()
@@ -74,14 +98,65 @@ class VaktBridgeServer @Inject constructor(
                 while (currentCoroutineContext().isActive && !s.isClosed) {
                     val command = reader.readLine()?.trim() ?: break
                     if (command.isEmpty()) continue
-                    val response = queue.execute(command)
+
+                    val response = if (command.uppercase().startsWith("AT")) {
+                        // AT commands: pass through raw
+                        queue.execute(command)
+                    } else {
+                        // PID command: use cache-backed shared polling
+                        val pidKey = command.uppercase().replace(" ", "")
+                        clientPids.add(pidKey)
+                        handlePidRequest(pidKey, clientPids)
+                            ?: queue.execute(command)  // fallback: direct pass-through on timeout
+                    }
+
                     writer.write(response + "\r>")
                     writer.flush()
                 }
             } catch (e: Exception) {
                 // Client disconnected — exit cleanly.
+            } finally {
+                // Remove this client's registered PIDs from the shared set
+                bridgeRequestedPids.removeAll(clientPids)
+                clientPids.clear()
+                _activeClientCount.value = (_activeClientCount.value - 1).coerceAtLeast(0)
             }
         }
+    }
+
+    /**
+     * Serves a PID request from a bridge client:
+     * 1. Check cache — return immediately if entry is fresh (< 3s).
+     * 2. Register PID for polling by OBD2Repository.
+     * 3. Wait up to 4s for OBD2Repository to populate the cache.
+     * 4. Remove PID from bridgeRequestedPids once served (or on timeout).
+     */
+    private suspend fun handlePidRequest(
+        pidKey: String,
+        clientPids: MutableSet<String>,
+        timeoutMs: Long = 4000L
+    ): String? {
+        // Fast path: cache hit
+        pidCache.get(pidKey)?.let { return it }
+
+        // Register for next poll cycle
+        bridgeRequestedPids.add(pidKey)
+        clientPids.add(pidKey)
+
+        // Wait for OBD2Repository to populate the cache
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            val result = pidCache.get(pidKey)
+            if (result != null) {
+                bridgeRequestedPids.remove(pidKey)
+                return result
+            }
+            delay(100L)
+        }
+
+        // Timeout — remove from bridge set so poller doesn't keep scheduling it
+        bridgeRequestedPids.remove(pidKey)
+        return null
     }
 
     /**
@@ -92,6 +167,8 @@ class VaktBridgeServer @Inject constructor(
         serverJob?.cancel()
         serverJob = null
         closeServerSocket()
+        bridgeRequestedPids.clear()
+        _activeClientCount.value = 0
     }
 
     private fun closeServerSocket() {

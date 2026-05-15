@@ -2,11 +2,16 @@ package com.rogerneumann.vakt.ui
 
 import android.Manifest
 import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.LocationManager
 import android.net.Uri
+import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -19,6 +24,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.rogerneumann.vakt.data.GaugeLayout
 import com.rogerneumann.vakt.data.LightingManager
 import com.rogerneumann.vakt.data.LightingMode
@@ -29,6 +35,7 @@ import com.rogerneumann.vakt.data.VehicleLayoutManager
 import com.rogerneumann.vakt.data.VehicleProfileHub
 import com.rogerneumann.vakt.data.VehicleProfileManager
 import com.rogerneumann.vakt.databinding.ActivitySettingsBinding
+import com.rogerneumann.vakt.obd2.VaktBridgeServer
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -43,6 +50,8 @@ class SettingsActivity : AppCompatActivity() {
     @Inject lateinit var profileManager: VehicleProfileManager
     @Inject lateinit var lightingManager: LightingManager
     @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
+    @Inject lateinit var bridgeServer: VaktBridgeServer
+    @Inject lateinit var sharedPreferences: SharedPreferences
 
     private lateinit var binding: ActivitySettingsBinding
 
@@ -66,6 +75,7 @@ class SettingsActivity : AppCompatActivity() {
         setupUnitButtons()
         setupThemeSection()
         setupDashboardLayoutSection()
+        setupBridgeSection()
         setupImportButton()
         setupSaveButton()
     }
@@ -614,6 +624,83 @@ class SettingsActivity : AppCompatActivity() {
             saveThemeSettings()
             finish()
         }
+    }
+
+    // ── Vakt Bridge section ───────────────────────────────────────────────────
+
+    private fun setupBridgeSection() {
+        val port = sharedPreferences.getInt("bridge_port", 35000)
+        val wifiIp = getWifiIp()
+        val address = "$wifiIp:$port"
+
+        // Restore toggle state
+        binding.switchBridgeEnabled.isChecked = sharedPreferences.getBoolean("bridge_enabled", true)
+        binding.switchBridgeEnabled.setOnCheckedChangeListener { _, checked ->
+            sharedPreferences.edit().putBoolean("bridge_enabled", checked).apply()
+            bridgeServer.isBridgeEnabled = checked
+        }
+
+        // Address display
+        binding.tvBridgeAddress.text = address
+
+        // Copy button
+        binding.btnBridgeCopy.setOnClickListener {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            clipboard.setPrimaryClip(ClipData.newPlainText("Vakt Bridge address", address))
+            Toast.makeText(this, "Address copied to clipboard", Toast.LENGTH_SHORT).show()
+        }
+
+        // Instructions accordion
+        binding.tvBridgeInstructionsTrigger.setOnClickListener {
+            val isVisible = binding.layoutBridgeInstructions.visibility == View.VISIBLE
+            binding.layoutBridgeInstructions.visibility = if (isVisible) View.GONE else View.VISIBLE
+            binding.tvBridgeInstructionsTrigger.text =
+                if (isVisible) "Setup instructions ▼" else "Setup instructions ▲"
+        }
+
+        // Advanced port field
+        binding.tvBridgeAdvancedTrigger.setOnClickListener {
+            val isVisible = binding.layoutBridgeAdvanced.visibility == View.VISIBLE
+            binding.layoutBridgeAdvanced.visibility = if (isVisible) View.GONE else View.VISIBLE
+            binding.tvBridgeAdvancedTrigger.text =
+                if (isVisible) "Advanced ▼" else "Advanced ▲"
+        }
+
+        binding.etBridgePort.setText(port.toString())
+        binding.etBridgePort.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                val newPort = s?.toString()?.toIntOrNull() ?: return
+                if (newPort in 1024..65535) {
+                    sharedPreferences.edit().putInt("bridge_port", newPort).apply()
+                    binding.tvBridgeAddress.text = "$wifiIp:$newPort"
+                }
+            }
+        })
+
+        // Observe active client count
+        lifecycleScope.launch {
+            bridgeServer.activeClientCount.collect { count ->
+                binding.tvBridgeStatus.text = if (count > 0)
+                    "Active — $count client(s) connected"
+                else
+                    "Waiting for connection"
+            }
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun getWifiIp(): String {
+        val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        val ip = wm.connectionInfo.ipAddress
+        return String.format(
+            "%d.%d.%d.%d",
+            ip and 0xff,
+            ip shr 8 and 0xff,
+            ip shr 16 and 0xff,
+            ip shr 24 and 0xff
+        )
     }
 
     companion object {

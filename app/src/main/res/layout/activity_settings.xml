@@ -380,6 +380,161 @@
             android:backgroundTint="#1E1E1E" android:textColor="#00E676"
             android:layout_marginBottom="24dp" />
 
+        <!-- ── Vakt Bridge ────────────────────────────────────────────────── -->
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="#2A2A2A" android:layout_marginBottom="24dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Vakt Bridge"
+            android:textColor="#B0BEC5"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
+            android:layout_marginBottom="24dp">
+
+            <!-- Enable toggle -->
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchBridgeEnabled"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Bridge enabled"
+                android:textColor="#FFFFFF"
+                android:checked="true"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Status line -->
+            <TextView
+                android:id="@+id/tvBridgeStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Waiting for connection"
+                android:textColor="#B0BEC5"
+                android:textSize="13sp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Address row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:id="@+id/tvBridgeAddress"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="0.0.0.0:35000"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:fontFamily="monospace" />
+
+                <Button
+                    android:id="@+id/btnBridgeCopy"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="Copy"
+                    android:textSize="12sp"
+                    android:backgroundTint="#444444"
+                    android:textColor="#FFFFFF" />
+            </LinearLayout>
+
+            <!-- Instructions accordion -->
+            <TextView
+                android:id="@+id/tvBridgeInstructionsTrigger"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Setup instructions ▼"
+                android:textColor="#00E676"
+                android:textSize="13sp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:layout_marginBottom="4dp" />
+
+            <LinearLayout
+                android:id="@+id/layoutBridgeInstructions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#2A2A2A"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="In ABRP: Settings → OBD Connection → WiFi ELM327 → enter the address above."
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="In Car Scanner: add a WiFi ELM327 connection with the address above."
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- Advanced (port) accordion -->
+            <TextView
+                android:id="@+id/tvBridgeAdvancedTrigger"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Advanced ▼"
+                android:textColor="#B0BEC5"
+                android:textSize="13sp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:layout_marginBottom="4dp" />
+
+            <LinearLayout
+                android:id="@+id/layoutBridgeAdvanced"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#2A2A2A"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Port (default 35000)"
+                    android:textColor="#B0BEC5"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/etBridgePort"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:inputType="number"
+                    android:text="35000"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#555555" />
+            </LinearLayout>
+
+        </LinearLayout>
+
         <!-- ── Display Theme ───────────────────────────────────────────────── -->
 
         <View
