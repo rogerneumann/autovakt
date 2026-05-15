@@ -14,6 +14,7 @@ import com.rogerneumann.vakt.auto.render.GaugeTheme
 import com.rogerneumann.vakt.auto.render.GaugeZone
 import com.rogerneumann.vakt.data.GaugeLayout
 import com.rogerneumann.vakt.data.VaktLiveData
+import com.rogerneumann.vakt.data.VehicleLayoutManager
 import com.rogerneumann.vakt.data.VehicleProfile
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -55,6 +56,10 @@ class DashboardView @JvmOverloads constructor(
 
     /** Layout enum controlling which draw path is used. */
     var gaugeLayout: GaugeLayout = GaugeLayout.GRID_4
+        set(value) { field = value; postInvalidate() }
+
+    /** VehicleLayoutManager for per-slot display type and min/max resolution. Injected by the host Activity. */
+    var vehicleLayoutManager: VehicleLayoutManager? = null
         set(value) { field = value; postInvalidate() }
 
     var displayMode: DisplayMode = DisplayMode.GAUGES
@@ -148,7 +153,15 @@ class DashboardView @JvmOverloads constructor(
         super.onDraw(canvas)
 
         // Slot-based path: resolve slots and delegate to the new layout-aware draw overload
-        val slots = GaugeSlotResolver.resolve(data, slotAssignments, vehicleProfile)
+        val lm = vehicleLayoutManager
+        val slots = if (lm != null) {
+            GaugeSlotResolver.resolve(data, slotAssignments, vehicleProfile, lm)
+        } else {
+            slotAssignments.map { shortName ->
+                if (shortName == null) com.rogerneumann.vakt.auto.render.GaugeSlot("--", "--", "")
+                else com.rogerneumann.vakt.auto.render.GaugeSlot(shortName, "--", "")
+            }
+        }
         renderer.draw(canvas, slots, gaugeLayout, theme)
     }
 

@@ -3,6 +3,7 @@ package com.rogerneumann.vakt.auto.render
 import android.graphics.*
 import com.rogerneumann.vakt.data.GaugeLayout
 import com.rogerneumann.vakt.data.PowertrainType
+import com.rogerneumann.vakt.data.SlotDisplayType
 import com.rogerneumann.vakt.data.VaktLiveData
 import com.rogerneumann.vakt.obd2.ConnectionState
 import kotlin.math.min
@@ -177,7 +178,7 @@ class GaugeRenderer {
     /**
      * Draws a single slot as a rounded-rect card.
      * [valueSizeFraction] controls value text size relative to cell height.
-     * No progress bar drawn — slots have no inherent min/max; fraction omitted.
+     * Branches on [GaugeSlot.displayType]: NUMERIC (text only), ARC (ring), BAR (horizontal bar).
      */
     private fun drawSlotTile(
         canvas: Canvas,
@@ -189,33 +190,135 @@ class GaugeRenderer {
         val ch = bottom - top
         val cx = left + cw / 2f
 
-        // Cap text sizes against cell width so tall-narrow tiles (portrait phone grid) don't overflow
-        val valueSize = minOf(ch * valueSizeFraction, cw * 0.48f)
-        val labelSize = minOf(ch * 0.13f, cw * 0.16f)
-        val unitSize  = minOf(ch * 0.12f, cw * 0.15f)
-
+        // Draw card background (shared across all display types)
         fillPaint.color = t.cardBackground
         fillPaint.alpha = 255
         canvas.drawRoundRect(left, top, right, bottom, 12f, 12f, fillPaint)
 
-        // Label
-        textPaint.color     = t.text
-        textPaint.textAlign = Paint.Align.CENTER
-        textPaint.textSize  = labelSize
-        textPaint.alpha     = (255 * 0.55f).toInt()
-        canvas.drawText(slot.label, cx, top + ch * 0.24f, textPaint)
+        when (slot.displayType) {
+            SlotDisplayType.NUMERIC -> {
+                // Cap text sizes against cell width so tall-narrow tiles don't overflow
+                val valueSize = minOf(ch * valueSizeFraction, cw * 0.48f)
+                val labelSize = minOf(ch * 0.13f, cw * 0.16f)
+                val unitSize  = minOf(ch * 0.12f, cw * 0.15f)
 
-        // Value
-        textPaint.textSize = valueSize
-        textPaint.alpha    = 255
-        canvas.drawText(slot.value, cx, top + ch * 0.60f, textPaint)
+                // Label
+                textPaint.color     = t.text
+                textPaint.textAlign = Paint.Align.CENTER
+                textPaint.textSize  = labelSize
+                textPaint.alpha     = (255 * 0.55f).toInt()
+                canvas.drawText(slot.label, cx, top + ch * 0.24f, textPaint)
 
-        // Unit
-        textPaint.textSize = unitSize
-        textPaint.alpha    = (255 * 0.65f).toInt()
-        canvas.drawText(slot.unit, cx, top + ch * 0.78f, textPaint)
+                // Value
+                textPaint.textSize = valueSize
+                textPaint.alpha    = 255
+                canvas.drawText(slot.value, cx, top + ch * 0.60f, textPaint)
 
-        textPaint.alpha = 255
+                // Unit
+                textPaint.textSize = unitSize
+                textPaint.alpha    = (255 * 0.65f).toInt()
+                canvas.drawText(slot.unit, cx, top + ch * 0.78f, textPaint)
+
+                textPaint.alpha = 255
+            }
+
+            SlotDisplayType.ARC -> {
+                val frac = slot.fraction ?: 0f
+                val ringDiam   = minOf(cw, ch) * 0.6f
+                val ringRadius = ringDiam / 2f
+                val cx2 = left + cw / 2f
+                val cy2 = top  + ch / 2f
+                val oval = RectF(cx2 - ringRadius, cy2 - ringRadius, cx2 + ringRadius, cy2 + ringRadius)
+
+                val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    style       = Paint.Style.STROKE
+                    strokeWidth = 10f
+                    color       = Color.GRAY
+                    alpha       = 80
+                }
+                val arcPaintLocal = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    style       = Paint.Style.STROKE
+                    strokeWidth = 10f
+                    color       = t.accent
+                }
+                canvas.drawArc(oval, -135f, 270f, false, trackPaint)
+                canvas.drawArc(oval, -135f, 270f * frac, false, arcPaintLocal)
+
+                // Value text inside ring (smaller)
+                val arcTextSize = minOf(ch * valueSizeFraction * 0.7f, cw * 0.36f)
+                val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    textSize  = arcTextSize
+                    color     = t.text
+                    textAlign = Paint.Align.CENTER
+                    typeface  = Typeface.DEFAULT_BOLD
+                }
+                canvas.drawText(slot.value, cx2, cy2 + arcTextSize / 3f, valuePaint)
+
+                // Label below ring
+                val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    textSize  = minOf(ch * 0.11f, cw * 0.14f)
+                    color     = t.text
+                    alpha     = (255 * 0.55f).toInt()
+                    textAlign = Paint.Align.CENTER
+                }
+                canvas.drawText(slot.label, cx2, top + ch * 0.92f, labelPaint)
+            }
+
+            SlotDisplayType.BAR -> {
+                val frac    = slot.fraction ?: 0f
+                val pad     = cw * 0.08f
+                val barTop    = top  + ch * 0.72f
+                val barBottom = top  + ch * 0.88f
+                val barLeft   = left + pad
+                val barRight  = left + cw - pad
+                val barWidth  = barRight - barLeft
+
+                // Background track
+                val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = Color.GRAY; alpha = 60; style = Paint.Style.FILL
+                }
+                canvas.drawRect(barLeft, barTop, barRight, barBottom, trackPaint)
+
+                // Fill color: SOC/Batt inverted (high = green), others normal (high = red)
+                val barColor = if (slot.label == "SOC" || slot.label == "Batt") {
+                    when {
+                        frac > 0.66f -> Color.GREEN
+                        frac > 0.33f -> Color.YELLOW
+                        else         -> Color.RED
+                    }
+                } else {
+                    when {
+                        frac < 0.33f -> Color.GREEN
+                        frac < 0.66f -> Color.YELLOW
+                        else         -> Color.RED
+                    }
+                }
+                val fillBarPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = barColor; style = Paint.Style.FILL
+                }
+                canvas.drawRect(barLeft, barTop, barLeft + barWidth * frac, barBottom, fillBarPaint)
+
+                // Value text above bar
+                val valueSize = minOf(ch * valueSizeFraction, cw * 0.48f)
+                val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    textSize  = valueSize
+                    color     = t.text
+                    textAlign = Paint.Align.CENTER
+                    typeface  = Typeface.DEFAULT_BOLD
+                }
+                val textX = left + cw / 2f
+                canvas.drawText(slot.value, textX, barTop - 4f, valuePaint)
+
+                // Label at top of cell
+                val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    textSize  = minOf(ch * 0.13f, cw * 0.16f)
+                    color     = t.text
+                    alpha     = (255 * 0.55f).toInt()
+                    textAlign = Paint.Align.CENTER
+                }
+                canvas.drawText(slot.label, textX, top + ch * 0.18f, labelPaint)
+            }
+        }
     }
 
     // ── Legacy overload (backward compat for DashboardView phone UI) ──────────

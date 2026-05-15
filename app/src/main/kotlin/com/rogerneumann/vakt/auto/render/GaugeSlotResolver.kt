@@ -1,6 +1,8 @@
 package com.rogerneumann.vakt.auto.render
 
+import com.rogerneumann.vakt.data.SlotDisplayType
 import com.rogerneumann.vakt.data.VaktLiveData
+import com.rogerneumann.vakt.data.VehicleLayoutManager
 import com.rogerneumann.vakt.data.VehicleProfile
 
 object GaugeSlotResolver {
@@ -18,85 +20,103 @@ object GaugeSlotResolver {
     fun resolve(
         liveData: VaktLiveData,
         assignments: List<String?>,
-        profile: VehicleProfile
+        profile: VehicleProfile,
+        layoutManager: VehicleLayoutManager
     ): List<GaugeSlot> = assignments.map { shortName ->
         if (shortName == null) return@map EMPTY_SLOT
-        resolveOne(liveData, shortName, profile)
+        resolveOne(liveData, shortName, profile, layoutManager)
     }
 
     private fun resolveOne(
         liveData: VaktLiveData,
         shortName: String,
-        profile: VehicleProfile
+        profile: VehicleProfile,
+        layoutManager: VehicleLayoutManager
     ): GaugeSlot {
         // 1. Named fields
-        when (shortName) {
-            "SOC"             -> return liveData.soc?.let {
+        val base: GaugeSlot? = when (shortName) {
+            "SOC"             -> liveData.soc?.let {
                 GaugeSlot("SOC", "%.1f".format(it), "%")
-            } ?: EMPTY_SLOT
+            }
 
-            "PWR"             -> return liveData.powerKw?.let {
+            "PWR"             -> liveData.powerKw?.let {
                 GaugeSlot("Power", "%.1f".format(it), "kW")
-            } ?: EMPTY_SLOT
+            }
 
-            "SPEED"           -> return liveData.speedMph?.let {
+            "SPEED"           -> liveData.speedMph?.let {
                 GaugeSlot("Speed", "%.1f".format(it), "mph")
-            } ?: EMPTY_SLOT
+            }
 
-            "RPM"             -> return liveData.rpm?.let {
+            "RPM"             -> liveData.rpm?.let {
                 GaugeSlot("RPM", it.toString(), "")
-            } ?: EMPTY_SLOT
+            }
 
-            "HV_V"            -> return liveData.hvVoltage?.let {
+            "HV_V"            -> liveData.hvVoltage?.let {
                 GaugeSlot("HV Volt", "%.1f".format(it), "V")
-            } ?: EMPTY_SLOT
+            }
 
-            "HV_I"            -> return liveData.hvCurrent?.let {
+            "HV_I"            -> liveData.hvCurrent?.let {
                 GaugeSlot("HV Curr", "%.1f".format(it), "A")
-            } ?: EMPTY_SLOT
+            }
 
-            "BATT_T_MAX"      -> return liveData.battTempMaxC?.let {
+            "BATT_T_MAX"      -> liveData.battTempMaxC?.let {
                 GaugeSlot("Batt Hi", "%.1f".format(it), "°C")
-            } ?: EMPTY_SLOT
+            }
 
-            "BATT_T_MIN"      -> return liveData.battTempMinC?.let {
+            "BATT_T_MIN"      -> liveData.battTempMinC?.let {
                 GaugeSlot("Batt Lo", "%.1f".format(it), "°C")
-            } ?: EMPTY_SLOT
+            }
 
-            "LOAD"            -> return liveData.engineLoad?.let {
+            "LOAD"            -> liveData.engineLoad?.let {
                 GaugeSlot("Load", "%.1f".format(it), "%")
-            } ?: EMPTY_SLOT
+            }
 
-            "FUEL_RATE"       -> return liveData.fuelRateGph?.let {
+            "FUEL_RATE"       -> liveData.fuelRateGph?.let {
                 GaugeSlot("Fuel", "%.1f".format(it), "gph")
-            } ?: EMPTY_SLOT
+            }
 
-            "BOOST_PSI"       -> return liveData.boostPressurePsi?.let {
+            "BOOST_PSI"       -> liveData.boostPressurePsi?.let {
                 GaugeSlot("Boost", "%.1f".format(it), "psi")
-            } ?: EMPTY_SLOT
+            }
 
-            "instantMiPerKwh" -> return liveData.instantMiPerKwh?.let {
+            "instantMiPerKwh" -> liveData.instantMiPerKwh?.let {
                 GaugeSlot("Inst", "%.1f".format(it), "mi/kWh")
-            } ?: EMPTY_SLOT
+            }
 
-            "instantMpg"      -> return liveData.instantMpg?.let {
+            "instantMpg"      -> liveData.instantMpg?.let {
                 GaugeSlot("Inst", "%.1f".format(it), "mpg")
-            } ?: EMPTY_SLOT
+            }
 
-            "averageMiPerKwh" -> return liveData.averageMiPerKwh?.let {
+            "averageMiPerKwh" -> liveData.averageMiPerKwh?.let {
                 GaugeSlot("Avg", "%.1f".format(it), "mi/kWh")
-            } ?: EMPTY_SLOT
+            }
 
-            "averageMpg"      -> return liveData.averageMpg?.let {
+            "averageMpg"      -> liveData.averageMpg?.let {
                 GaugeSlot("Avg", "%.1f".format(it), "mpg")
-            } ?: EMPTY_SLOT
+            }
+
+            else -> null  // fall through to custom PID lookup
         }
 
         // 2. CustomPid from liveData.customPids; label/unit from profile definition
-        val rawValue = liveData.customPids[shortName] ?: return EMPTY_SLOT
-        val pidDef = profile.customPids.firstOrNull { it.shortName == shortName }
-        val label = pidDef?.name ?: shortName
-        val unit  = pidDef?.units ?: ""
-        return GaugeSlot(label, "%.1f".format(rawValue), unit)
+        val resolved: GaugeSlot = base ?: run {
+            val rawValue = liveData.customPids[shortName] ?: return EMPTY_SLOT
+            val pidDef = profile.customPids.firstOrNull { it.shortName == shortName }
+            val label = pidDef?.name ?: shortName
+            val unit  = pidDef?.units ?: ""
+            GaugeSlot(label, "%.1f".format(rawValue), unit)
+        }
+
+        if (resolved.value == "--") return EMPTY_SLOT
+
+        // 3. Enrich with display type and fraction from VehicleLayoutManager
+        val displayType = layoutManager.getSlotDisplayType(shortName)
+        val (min, max) = layoutManager.getSlotMinMax(shortName)
+        val numericVal = resolved.value.toFloatOrNull()
+        val fraction = if (displayType != SlotDisplayType.NUMERIC && numericVal != null && max != min) {
+            ((numericVal - min) / (max - min)).coerceIn(0f, 1f)
+        } else null
+
+        return resolved.copy(displayType = displayType, fraction = fraction)
     }
 }

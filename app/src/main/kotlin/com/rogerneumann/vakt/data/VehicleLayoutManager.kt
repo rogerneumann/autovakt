@@ -220,6 +220,40 @@ class VehicleLayoutManager @Inject constructor(
     }
 
     // -------------------------------------------------------------------------
+    // Per-slot display type
+    // -------------------------------------------------------------------------
+
+    fun getSlotDisplayType(shortName: String): SlotDisplayType {
+        val stored = prefs.getString("slot_display_type_$shortName", null)
+        return if (stored != null) {
+            runCatching { SlotDisplayType.valueOf(stored) }
+                .getOrElse { PidRangeDefaults.defaultDisplayType(shortName) }
+        } else {
+            PidRangeDefaults.defaultDisplayType(shortName)
+        }
+    }
+
+    fun saveSlotDisplayType(shortName: String, type: SlotDisplayType) {
+        prefs.edit()
+            .putString("slot_display_type_$shortName", type.name)
+            .apply()
+    }
+
+    fun getSlotMinMax(shortName: String): Pair<Float, Float> {
+        val defaults = PidRangeDefaults.defaultRange(shortName)
+        val min = prefs.getFloat("slot_min_$shortName", defaults.first)
+        val max = prefs.getFloat("slot_max_$shortName", defaults.second)
+        return min to max
+    }
+
+    fun saveSlotMinMax(shortName: String, min: Float, max: Float) {
+        prefs.edit()
+            .putFloat("slot_min_$shortName", min)
+            .putFloat("slot_max_$shortName", max)
+            .apply()
+    }
+
+    // -------------------------------------------------------------------------
     // Auto-layout detection
     // -------------------------------------------------------------------------
 

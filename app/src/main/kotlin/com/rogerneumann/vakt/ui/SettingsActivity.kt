@@ -4,12 +4,16 @@ import android.Manifest
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.text.format.DateFormat
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,6 +22,8 @@ import androidx.core.content.ContextCompat
 import com.rogerneumann.vakt.data.GaugeLayout
 import com.rogerneumann.vakt.data.LightingManager
 import com.rogerneumann.vakt.data.LightingMode
+import com.rogerneumann.vakt.data.PidRangeDefaults
+import com.rogerneumann.vakt.data.SlotDisplayType
 import com.rogerneumann.vakt.data.UnitSystem
 import com.rogerneumann.vakt.data.VehicleLayoutManager
 import com.rogerneumann.vakt.data.VehicleProfileHub
@@ -89,9 +95,13 @@ class SettingsActivity : AppCompatActivity() {
         val allShortNames = (profileShortNames + standardShortNames).distinct().sorted()
         val spinnerOptions = listOf("— empty —") + allShortNames
 
-        // Setup spinners
+        // Setup spinners + display-type controls
         val currentAssignments = vehicleLayoutManager.getSlotAssignments(key)
-        val spinnerAdapters = mutableListOf<ArrayAdapter<String>>()
+
+        // Track current shortName for each slot so we can save display type per-shortName
+        val currentShortNames = Array<String?>(6) { i ->
+            if (i < currentAssignments.size) currentAssignments[i] else null
+        }
 
         for (i in 0..5) {
             val spinner = when (i) {
@@ -103,26 +113,118 @@ class SettingsActivity : AppCompatActivity() {
                 5 -> binding.spinnerSlot5
                 else -> continue
             }
+            val displayTypeRow = when (i) {
+                0 -> binding.displayTypeRow0
+                1 -> binding.displayTypeRow1
+                2 -> binding.displayTypeRow2
+                3 -> binding.displayTypeRow3
+                4 -> binding.displayTypeRow4
+                5 -> binding.displayTypeRow5
+                else -> continue
+            }
+            val btnN = when (i) {
+                0 -> binding.btnDisplayN0; 1 -> binding.btnDisplayN1
+                2 -> binding.btnDisplayN2; 3 -> binding.btnDisplayN3
+                4 -> binding.btnDisplayN4; 5 -> binding.btnDisplayN5
+                else -> continue
+            }
+            val btnArc = when (i) {
+                0 -> binding.btnDisplayArc0; 1 -> binding.btnDisplayArc1
+                2 -> binding.btnDisplayArc2; 3 -> binding.btnDisplayArc3
+                4 -> binding.btnDisplayArc4; 5 -> binding.btnDisplayArc5
+                else -> continue
+            }
+            val btnBar = when (i) {
+                0 -> binding.btnDisplayBar0; 1 -> binding.btnDisplayBar1
+                2 -> binding.btnDisplayBar2; 3 -> binding.btnDisplayBar3
+                4 -> binding.btnDisplayBar4; 5 -> binding.btnDisplayBar5
+                else -> continue
+            }
+            val etMin = when (i) {
+                0 -> binding.etMin0; 1 -> binding.etMin1
+                2 -> binding.etMin2; 3 -> binding.etMin3
+                4 -> binding.etMin4; 5 -> binding.etMin5
+                else -> continue
+            }
+            val etMax = when (i) {
+                0 -> binding.etMax0; 1 -> binding.etMax1
+                2 -> binding.etMax2; 3 -> binding.etMax3
+                4 -> binding.etMax4; 5 -> binding.etMax5
+                else -> continue
+            }
 
             val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, spinnerOptions)
             spinner.adapter = adapter
-            spinnerAdapters.add(adapter)
 
-            // Restore selection
-            val currentValue = if (i < currentAssignments.size) currentAssignments[i] else null
+            // Restore spinner selection and init display-type row
+            val currentValue = currentShortNames[i]
             val position = if (currentValue.isNullOrEmpty()) 0 else spinnerOptions.indexOf(currentValue)
             spinner.setSelection(if (position >= 0) position else 0)
 
-            // On change listener
+            // Init display-type controls for the current shortName
+            if (!currentValue.isNullOrEmpty()) {
+                displayTypeRow.visibility = View.VISIBLE
+                refreshDisplayTypeControls(currentValue, btnN, btnArc, btnBar, etMin, etMax)
+            } else {
+                displayTypeRow.visibility = View.GONE
+            }
+
+            // Spinner item selected listener
             spinner.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
-                    val selected = spinnerOptions[position]
+                override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                    val selected = spinnerOptions[pos]
                     val shortName = if (selected == "— empty —") null else selected
+                    currentShortNames[i] = shortName
                     vehicleLayoutManager.saveSlotAssignment(key, i, shortName)
                     vehicleLayoutManager.setConfigured(key, true)
-                }
 
+                    if (shortName != null) {
+                        displayTypeRow.visibility = View.VISIBLE
+                        refreshDisplayTypeControls(shortName, btnN, btnArc, btnBar, etMin, etMax)
+                    } else {
+                        displayTypeRow.visibility = View.GONE
+                    }
+                }
                 override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+            })
+
+            // Display-type button listeners
+            btnN.setOnClickListener {
+                val sn = currentShortNames[i] ?: return@setOnClickListener
+                vehicleLayoutManager.saveSlotDisplayType(sn, SlotDisplayType.NUMERIC)
+                refreshDisplayTypeControls(sn, btnN, btnArc, btnBar, etMin, etMax)
+            }
+            btnArc.setOnClickListener {
+                val sn = currentShortNames[i] ?: return@setOnClickListener
+                vehicleLayoutManager.saveSlotDisplayType(sn, SlotDisplayType.ARC)
+                refreshDisplayTypeControls(sn, btnN, btnArc, btnBar, etMin, etMax)
+            }
+            btnBar.setOnClickListener {
+                val sn = currentShortNames[i] ?: return@setOnClickListener
+                vehicleLayoutManager.saveSlotDisplayType(sn, SlotDisplayType.BAR)
+                refreshDisplayTypeControls(sn, btnN, btnArc, btnBar, etMin, etMax)
+            }
+
+            // Min/max text watchers
+            etMin.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    val sn = currentShortNames[i] ?: return
+                    val minVal = s?.toString()?.toFloatOrNull() ?: return
+                    val maxVal = etMax.text.toString().toFloatOrNull() ?: return
+                    vehicleLayoutManager.saveSlotMinMax(sn, minVal, maxVal)
+                }
+            })
+            etMax.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    val sn = currentShortNames[i] ?: return
+                    val minVal = etMin.text.toString().toFloatOrNull() ?: return
+                    val maxVal = s?.toString()?.toFloatOrNull() ?: return
+                    vehicleLayoutManager.saveSlotMinMax(sn, minVal, maxVal)
+                }
             })
         }
 
@@ -167,6 +269,41 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(Intent(this, com.rogerneumann.vakt.ui.vehicles.SavedVehiclesActivity::class.java))
         }
     }
+
+    /**
+     * Refreshes the 3-button toggle and min/max fields for a given [shortName].
+     * Reads the saved (or default) display type and min/max from [vehicleLayoutManager].
+     */
+    private fun refreshDisplayTypeControls(
+        shortName: String,
+        btnN: Button, btnArc: Button, btnBar: Button,
+        etMin: EditText, etMax: EditText
+    ) {
+        val displayType = vehicleLayoutManager.getSlotDisplayType(shortName)
+        val (min, max) = vehicleLayoutManager.getSlotMinMax(shortName)
+
+        val activeColor  = Color.parseColor("#00E676")
+        val inactiveColor = Color.parseColor("#444444")
+
+        btnN.backgroundTintList   = android.content.res.ColorStateList.valueOf(if (displayType == SlotDisplayType.NUMERIC) activeColor else inactiveColor)
+        btnArc.backgroundTintList = android.content.res.ColorStateList.valueOf(if (displayType == SlotDisplayType.ARC)     activeColor else inactiveColor)
+        btnBar.backgroundTintList = android.content.res.ColorStateList.valueOf(if (displayType == SlotDisplayType.BAR)     activeColor else inactiveColor)
+
+        val showMinMax = displayType != SlotDisplayType.NUMERIC
+        etMin.visibility = if (showMinMax) View.VISIBLE else View.GONE
+        etMax.visibility = if (showMinMax) View.VISIBLE else View.GONE
+
+        if (showMinMax) {
+            // Only set text if the field is empty or value has changed, to avoid fighting text watchers
+            val minStr = formatMinMax(min)
+            val maxStr = formatMinMax(max)
+            if (etMin.text.toString() != minStr) etMin.setText(minStr)
+            if (etMax.text.toString() != maxStr) etMax.setText(maxStr)
+        }
+    }
+
+    private fun formatMinMax(value: Float): String =
+        if (value == value.toLong().toFloat()) value.toLong().toString() else "%.1f".format(value)
 
     private fun updateSlotVisibility(layout: GaugeLayout) {
         val show2x3 = layout == GaugeLayout.GRID_2x3
