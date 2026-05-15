@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+<resources>
     <style name="Theme.Vakt" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
         <item name="colorPrimary">#00E676</item>
         <item name="colorOnPrimary">#000000</item>
-        <!-- Secondary brand color. -->
         <item name="colorSecondary">#B0BEC5</item>
         <item name="colorOnSecondary">#000000</item>
-        <!-- Transparent system bars — full-bleed canvas -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 </resources>
