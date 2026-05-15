@@ -25,6 +25,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.rogerneumann.vakt.R
 import com.rogerneumann.vakt.data.LightingManager
 import com.rogerneumann.vakt.data.VehicleLayoutManager
@@ -35,6 +36,8 @@ import com.rogerneumann.vakt.obd2.ConnectionState
 import com.rogerneumann.vakt.service.OBD2ForegroundService
 import com.rogerneumann.vakt.ui.history.HistoryActivity
 import com.rogerneumann.vakt.ui.scan.DeviceScanFragment
+import com.rogerneumann.vakt.util.LogShareManager
+import com.rogerneumann.vakt.util.ShakeDetector
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -53,10 +56,13 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var profileHub: VehicleProfileHub
     @Inject lateinit var profileManager: VehicleProfileManager
     @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
+    @Inject lateinit var logShareManager: LogShareManager
 
     private var titleTapCount = 0
     private var hamburgerPulseAnimator: ObjectAnimator? = null
     private var hamburgerDotView: View? = null
+
+    private val shakeDetector by lazy { ShakeDetector(this) { logShareManager.shareLogs(this) } }
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -87,11 +93,36 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        shakeDetector.start()
         showSwipeHintIfNeeded()
-        // Clear the hamburger dot if a device is now paired
-        if (sharedPreferences.getString("saved_device_address", null) != null) {
+        val hasPairedDevice = sharedPreferences.getString("saved_device_address", null) != null
+        if (hasPairedDevice) {
             removeHamburgerDot()
+        } else if (sharedPreferences.getBoolean("wizard_completed", false)
+            && hamburgerPulseAnimator == null && hamburgerDotView == null) {
+            startHamburgerPulse()
         }
+        promptPendingCrashReportIfNeeded()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        shakeDetector.stop()
+    }
+
+    private fun promptPendingCrashReportIfNeeded() {
+        if (!logShareManager.hasPendingCrash()) return
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Crash Detected")
+            .setMessage("Vakt crashed last time. Share a diagnostic report?")
+            .setPositiveButton("Share") { _, _ ->
+                logShareManager.clearPendingCrash()
+                logShareManager.shareLogs(this)
+            }
+            .setNegativeButton("Dismiss") { _, _ ->
+                logShareManager.clearPendingCrash()
+            }
+            .show()
     }
 
     private fun setupImmersiveMode() {

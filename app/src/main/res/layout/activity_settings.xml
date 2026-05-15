@@ -748,6 +748,15 @@
             android:layout_marginBottom="12dp" />
 
         <Button
+            android:id="@+id/btnShareLogs"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Share Diagnostic Logs"
+            android:backgroundTint="#424242"
+            android:textColor="#AAAAAA"
+            android:layout_marginBottom="12dp" />
+
+        <Button
             android:id="@+id/btnSave"
             android:layout_width="match_parent"
             android:layout_height="64dp"

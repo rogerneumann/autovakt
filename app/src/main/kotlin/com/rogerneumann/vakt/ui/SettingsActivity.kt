@@ -36,6 +36,7 @@ import com.rogerneumann.vakt.data.VehicleProfileHub
 import com.rogerneumann.vakt.data.VehicleProfileManager
 import com.rogerneumann.vakt.databinding.ActivitySettingsBinding
 import com.rogerneumann.vakt.obd2.VaktBridgeServer
+import com.rogerneumann.vakt.util.LogShareManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -52,6 +53,7 @@ class SettingsActivity : AppCompatActivity() {
     @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
     @Inject lateinit var bridgeServer: VaktBridgeServer
     @Inject lateinit var sharedPreferences: SharedPreferences
+    @Inject lateinit var logShareManager: LogShareManager
 
     private lateinit var binding: ActivitySettingsBinding
 
@@ -77,6 +79,7 @@ class SettingsActivity : AppCompatActivity() {
         setupDashboardLayoutSection()
         setupBridgeSection()
         setupImportButton()
+        setupShareLogsButton()
         setupSaveButton()
     }
 
@@ -494,6 +497,12 @@ class SettingsActivity : AppCompatActivity() {
 
     // ── Import profile ────────────────────────────────────────────────────────
 
+    private fun setupShareLogsButton() {
+        binding.btnShareLogs.setOnClickListener {
+            logShareManager.shareLogs(this)
+        }
+    }
+
     private fun setupImportButton() {
         binding.btnImportProfile.setOnClickListener {
             showImportDialog()
@@ -692,15 +701,21 @@ class SettingsActivity : AppCompatActivity() {
 
     @Suppress("DEPRECATION")
     private fun getWifiIp(): String {
-        val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        val ip = wm.connectionInfo.ipAddress
-        return String.format(
-            "%d.%d.%d.%d",
-            ip and 0xff,
-            ip shr 8 and 0xff,
-            ip shr 16 and 0xff,
-            ip shr 24 and 0xff
-        )
+        return try {
+            val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+                ?: return "0.0.0.0"
+            val ip = wm.connectionInfo?.ipAddress ?: 0
+            if (ip == 0) return "0.0.0.0"
+            String.format(
+                "%d.%d.%d.%d",
+                ip and 0xff,
+                ip shr 8 and 0xff,
+                ip shr 16 and 0xff,
+                ip shr 24 and 0xff
+            )
+        } catch (_: Exception) {
+            "0.0.0.0"
+        }
     }
 
     companion object {

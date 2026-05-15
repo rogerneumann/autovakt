@@ -2,12 +2,16 @@ package com.rogerneumann.vakt.ui
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import com.rogerneumann.vakt.auto.render.DisplayMode
 import com.rogerneumann.vakt.auto.render.GaugeRenderer
+import com.rogerneumann.vakt.auto.render.GaugeSlot
 import com.rogerneumann.vakt.auto.render.GaugeSlotResolver
 import com.rogerneumann.vakt.auto.render.GaugeStyle
 import com.rogerneumann.vakt.auto.render.GaugeTheme
@@ -80,6 +84,19 @@ class DashboardView @JvmOverloads constructor(
         highlightedZone = null
         postInvalidate()
     }
+
+    private val mediaPaint = Paint().apply {
+        isAntiAlias = true
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.DEFAULT_BOLD
+        style = Paint.Style.FILL
+    }
+    private val dividerPaint = Paint().apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2f
+        isAntiAlias = true
+    }
+    private val dotPaint = Paint().apply { isAntiAlias = true }
 
     private val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
         private val SWIPE_VELOCITY = 400f
@@ -158,18 +175,89 @@ class DashboardView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        val w = width.toFloat()
+        val h = height.toFloat()
+        val slots = resolveSlots()
 
-        // Slot-based path: resolve slots and delegate to the new layout-aware draw overload
+        when (displayMode) {
+            DisplayMode.GAUGES -> renderer.draw(canvas, slots, gaugeLayout, theme)
+            DisplayMode.SPLIT  -> drawSplit(canvas, w, h, slots)
+            DisplayMode.MEDIA  -> {
+                canvas.drawColor(theme.background)
+                drawMediaStrip(canvas, 0f, 0f, w, h)
+            }
+        }
+
+        drawModeDots(canvas, w, h)
+    }
+
+    private fun resolveSlots(): List<GaugeSlot> {
         val lm = vehicleLayoutManager
-        val slots = if (lm != null) {
+        return if (lm != null) {
             GaugeSlotResolver.resolve(data, slotAssignments, vehicleProfile, lm)
         } else {
             slotAssignments.map { shortName ->
-                if (shortName == null) com.rogerneumann.vakt.auto.render.GaugeSlot("--", "--", "")
-                else com.rogerneumann.vakt.auto.render.GaugeSlot(shortName, "--", "")
+                if (shortName == null) GaugeSlot("--", "--", "")
+                else GaugeSlot(shortName, "--", "")
             }
         }
+    }
+
+    private fun drawSplit(canvas: Canvas, w: Float, h: Float, slots: List<GaugeSlot>) {
+        val splitY = h * 0.58f
+        canvas.drawColor(theme.background)
+        canvas.save()
+        canvas.clipRect(0f, 0f, w, splitY)
         renderer.draw(canvas, slots, gaugeLayout, theme)
+        canvas.restore()
+        dividerPaint.color = theme.accent
+        canvas.drawLine(w * 0.05f, splitY, w * 0.95f, splitY, dividerPaint)
+        drawMediaStrip(canvas, 0f, splitY, w, h)
+    }
+
+    private fun drawMediaStrip(canvas: Canvas, x0: Float, y0: Float, x1: Float, y1: Float) {
+        val cw = x1 - x0
+        val ch = y1 - y0
+        val cx = x0 + cw / 2f
+        val cy = y0 + ch / 2f
+        val hasMedia = !data.currentSongTitle.isNullOrBlank()
+        val refDim = min(cw, ch)
+
+        mediaPaint.textAlign = Paint.Align.CENTER
+
+        // Music note icon
+        mediaPaint.color = theme.accent
+        mediaPaint.alpha = if (hasMedia) 200 else 80
+        mediaPaint.textSize = refDim * 0.20f
+        canvas.drawText("♫", cx, cy - refDim * 0.18f, mediaPaint)
+
+        // Song title
+        mediaPaint.color = theme.text
+        mediaPaint.alpha = if (hasMedia) 255 else 120
+        mediaPaint.textSize = refDim * 0.12f
+        val title = if (hasMedia) data.currentSongTitle!!.take(45) else "No media playing"
+        canvas.drawText(title, cx, cy + refDim * 0.05f, mediaPaint)
+
+        // Artist
+        if (hasMedia && !data.currentSongArtist.isNullOrBlank()) {
+            mediaPaint.color = theme.textSecondary
+            mediaPaint.alpha = 200
+            mediaPaint.textSize = refDim * 0.09f
+            canvas.drawText(data.currentSongArtist!!.take(45), cx, cy + refDim * 0.20f, mediaPaint)
+        }
+
+        mediaPaint.alpha = 255
+    }
+
+    private fun drawModeDots(canvas: Canvas, w: Float, h: Float) {
+        val dotY = h - 16f
+        val dotR = 5f
+        val dotGap = 18f
+        DisplayMode.values().forEachIndexed { i, mode ->
+            val dotX = w / 2f + (i - 1) * dotGap
+            dotPaint.color = if (mode == displayMode) theme.dotActive else theme.dotInactive
+            canvas.drawCircle(dotX, dotY, dotR, dotPaint)
+        }
     }
 
     private fun highlightZoneAt(x: Float, y: Float) {

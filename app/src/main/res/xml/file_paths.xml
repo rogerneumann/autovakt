@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Cache dir for shareable diagnostic log files (vakt_diagnostics.txt) -->
+    <cache-path name="vakt_logs" path="." />
+    <!-- Files dir for persisted crash reports (vakt_last_crash.txt) -->
+    <files-path name="vakt_crashes" path="." />
+</paths>

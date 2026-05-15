@@ -37,6 +37,9 @@ class FirstRunWizardManager(
 
     fun showIfNeeded() {
         if (prefs.contains("saved_device_address")) return
+        // wizard_completed is set as soon as the user moves past step 1, so Activity
+        // recreates (e.g. returning from notification settings) don't restart the whole flow.
+        if (prefs.getBoolean("wizard_completed", false)) return
         registerPermissionLauncher()
         showBluetoothStep()
     }
@@ -122,10 +125,13 @@ class FirstRunWizardManager(
                 "To show what's playing in your media views, allow Notification Access."
             )
             .setPositiveButton("Allow") { _, _ ->
+                // Mark completed before leaving so Activity recreate doesn't restart wizard
+                prefs.edit().putBoolean("wizard_completed", true).apply()
                 activity.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                 showAdapterStep()
             }
             .setNegativeButton("Skip for now") { _, _ ->
+                prefs.edit().putBoolean("wizard_completed", true).apply()
                 showAdapterStep()
             }
             .setCancelable(false)
@@ -142,10 +148,11 @@ class FirstRunWizardManager(
                 "We recommend the OBDLink CX (BLE) or MX+ (Bluetooth Classic)."
             )
             .setPositiveButton("Scan for adapters") { _, _ ->
+                prefs.edit().putBoolean("wizard_completed", true).apply()
                 DeviceScanFragment().show(activity.supportFragmentManager, "device_scan")
             }
             .setNegativeButton("Skip for now") { _, _ ->
-                // Wizard skipped — notify MainActivity to start hamburger pulse
+                prefs.edit().putBoolean("wizard_completed", true).apply()
                 onWizardSkipped()
             }
             .setCancelable(false)
