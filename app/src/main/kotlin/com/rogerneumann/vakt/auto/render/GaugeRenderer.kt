@@ -1,6 +1,7 @@
 package com.rogerneumann.vakt.auto.render
 
 import android.graphics.*
+import com.rogerneumann.vakt.data.GaugeLayout
 import com.rogerneumann.vakt.data.PowertrainType
 import com.rogerneumann.vakt.data.VaktLiveData
 import com.rogerneumann.vakt.obd2.ConnectionState
@@ -38,6 +39,190 @@ class GaugeRenderer {
     // Set at the top of draw(); referenced by all private helpers (single-thread safe)
     private var t = GaugeTheme.DARK
 
+    // ── Primary slot-based draw (Block 12c) ───────────────────────────────────
+
+    /**
+     * Primary draw entry point for slot-based rendering.
+     * Routes to the appropriate layout-specific draw path based on [layout].
+     */
+    fun draw(
+        canvas: Canvas,
+        slots: List<GaugeSlot>,
+        layout: GaugeLayout,
+        theme: GaugeTheme
+    ) {
+        t = theme
+        textPaint.color = t.text
+        canvas.drawColor(t.background)
+
+        val w = canvas.width.toFloat()
+        val h = canvas.height.toFloat()
+
+        when (layout) {
+            GaugeLayout.GRID_2  -> drawSlotGrid2(canvas, slots, w, h)
+            GaugeLayout.GRID_4  -> drawSlotGrid4(canvas, slots, w, h)
+            GaugeLayout.GRID_2x3 -> drawSlotGrid2x3(canvas, slots, w, h)
+            GaugeLayout.ARC     -> drawSlotArc(canvas, slots, w, h)
+        }
+
+        textPaint.color = t.text
+        textPaint.textAlign = Paint.Align.CENTER
+        textPaint.alpha = 255
+    }
+
+    // ── GRID_2: 2 equal tiles (top/bottom halves) ─────────────────────────────
+
+    private fun drawSlotGrid2(canvas: Canvas, slots: List<GaugeSlot>, w: Float, h: Float) {
+        val pad  = 10f
+        val cellW = w - pad * 2f
+        val cellH = (h - pad * 3f) / 2f
+
+        for (i in 0 until 2) {
+            val slot = slots.getOrNull(i) ?: GaugeSlot("--", "--", "")
+            val top  = pad + i * (cellH + pad)
+            drawSlotTile(canvas, pad, top, pad + cellW, top + cellH, slot, valueSizeFraction = 0.38f)
+        }
+    }
+
+    // ── GRID_4: 2×2 tiles ─────────────────────────────────────────────────────
+
+    private fun drawSlotGrid4(canvas: Canvas, slots: List<GaugeSlot>, w: Float, h: Float) {
+        val pad   = 10f
+        val cellW = (w - pad * 3f) / 2f
+        val cellH = (h - pad * 3f) / 2f
+
+        for (i in 0 until 4) {
+            val slot = slots.getOrNull(i) ?: GaugeSlot("--", "--", "")
+            val col  = i % 2
+            val row  = i / 2
+            val left = pad + col * (cellW + pad)
+            val top  = pad + row * (cellH + pad)
+            drawSlotTile(canvas, left, top, left + cellW, top + cellH, slot, valueSizeFraction = 0.32f)
+        }
+    }
+
+    // ── GRID_2x3: 2×3 tiles ───────────────────────────────────────────────────
+
+    private fun drawSlotGrid2x3(canvas: Canvas, slots: List<GaugeSlot>, w: Float, h: Float) {
+        val pad   = 8f
+        val cellW = (w - pad * 3f) / 2f
+        val cellH = (h - pad * 4f) / 3f
+
+        for (i in 0 until 6) {
+            val slot = slots.getOrNull(i) ?: GaugeSlot("--", "--", "")
+            val col  = i % 2
+            val row  = i / 2
+            val left = pad + col * (cellW + pad)
+            val top  = pad + row * (cellH + pad)
+            drawSlotTile(canvas, left, top, left + cellW, top + cellH, slot, valueSizeFraction = 0.28f)
+        }
+    }
+
+    // ── ARC: arc driven by slot[0], three small readouts from slots[1..3] ─────
+
+    private fun drawSlotArc(canvas: Canvas, slots: List<GaugeSlot>, w: Float, h: Float) {
+        val alpha  = 255
+        val cx     = w / 2f
+        val radius = min(w, h) * 0.38f
+        val arcCy  = h * 0.44f
+        val narrow = w / h < 1.2f
+
+        // Arc gauge from slot[0]
+        val arcSlot = slots.getOrNull(0) ?: GaugeSlot("--", "--", "")
+        val fraction = arcSlot.value.toFloatOrNull()?.let { it / 100f }?.coerceIn(0f, 1f) ?: 0f
+        val arcColor = Color.CYAN
+        drawArcGauge(
+            canvas, cx, arcCy, radius, alpha,
+            fraction    = fraction,
+            color       = arcColor,
+            centerLabel = arcSlot.value,
+            subLabel    = arcSlot.label
+        )
+
+        // Small readouts: slots[1] (left), slots[2] (right), slots[3] (below bar if space)
+        val scale   = if (narrow) 0.8f else 1.0f
+        val metricY = h * 0.10f
+
+        val leftSlot  = slots.getOrNull(1) ?: GaugeSlot("--", "--", "")
+        val rightSlot = slots.getOrNull(2) ?: GaugeSlot("--", "--", "")
+
+        drawMetricBlock(canvas, 20f, metricY, alpha, scale,
+            label = leftSlot.label,
+            value = leftSlot.value,
+            unit  = leftSlot.unit,
+            align = Paint.Align.LEFT)
+
+        drawMetricBlock(canvas, w - 20f, metricY, alpha, scale,
+            label = rightSlot.label,
+            value = rightSlot.value,
+            unit  = rightSlot.unit,
+            align = Paint.Align.RIGHT)
+
+        // slot[3] as a simple text readout beneath the arc
+        val slot3 = slots.getOrNull(3)
+        if (slot3 != null && slot3.value != "--") {
+            textPaint.color     = t.text
+            textPaint.textAlign = Paint.Align.CENTER
+            textPaint.textSize  = 22f * scale
+            textPaint.alpha     = alpha
+            canvas.drawText("${slot3.value} ${slot3.unit}".trim(), cx, h * 0.92f, textPaint)
+            textPaint.textSize = 14f * scale
+            textPaint.alpha    = (alpha * 0.6f).toInt()
+            canvas.drawText(slot3.label, cx, h * 0.87f, textPaint)
+        }
+    }
+
+    // ── Slot tile primitive ────────────────────────────────────────────────────
+
+    /**
+     * Draws a single slot as a rounded-rect card.
+     * [valueSizeFraction] controls value text size relative to cell height.
+     * No progress bar drawn — slots have no inherent min/max; fraction omitted.
+     */
+    private fun drawSlotTile(
+        canvas: Canvas,
+        left: Float, top: Float, right: Float, bottom: Float,
+        slot: GaugeSlot,
+        valueSizeFraction: Float = 0.32f
+    ) {
+        val cw = right - left
+        val ch = bottom - top
+        val cx = left + cw / 2f
+
+        fillPaint.color = t.cardBackground
+        fillPaint.alpha = 255
+        canvas.drawRoundRect(left, top, right, bottom, 12f, 12f, fillPaint)
+
+        // Label
+        textPaint.color     = t.text
+        textPaint.textAlign = Paint.Align.CENTER
+        textPaint.textSize  = ch * 0.13f
+        textPaint.alpha     = (255 * 0.55f).toInt()
+        canvas.drawText(slot.label, cx, top + ch * 0.24f, textPaint)
+
+        // Value
+        textPaint.textSize = ch * valueSizeFraction
+        textPaint.alpha    = 255
+        canvas.drawText(slot.value, cx, top + ch * 0.60f, textPaint)
+
+        // Unit
+        textPaint.textSize = ch * 0.12f
+        textPaint.alpha    = (255 * 0.65f).toInt()
+        canvas.drawText(slot.unit, cx, top + ch * 0.78f, textPaint)
+
+        textPaint.alpha = 255
+    }
+
+    // ── Legacy overload (backward compat for DashboardView phone UI) ──────────
+
+    /**
+     * Legacy draw path used by [com.rogerneumann.vakt.ui.DashboardView] for the
+     * phone-side swipeable modes (GAUGES / SPLIT / MEDIA) and gesture-driven
+     * gauge styles (ARC / GRID / TEXT).
+     *
+     * This overload is retained for the transition period and will be replaced
+     * once all callers have migrated to slot-based rendering.
+     */
     fun draw(
         canvas: Canvas,
         data: VaktLiveData,

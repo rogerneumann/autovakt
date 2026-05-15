@@ -8,10 +8,13 @@ import android.view.MotionEvent
 import android.view.View
 import com.rogerneumann.vakt.auto.render.DisplayMode
 import com.rogerneumann.vakt.auto.render.GaugeRenderer
+import com.rogerneumann.vakt.auto.render.GaugeSlotResolver
 import com.rogerneumann.vakt.auto.render.GaugeStyle
 import com.rogerneumann.vakt.auto.render.GaugeTheme
 import com.rogerneumann.vakt.auto.render.GaugeZone
+import com.rogerneumann.vakt.data.GaugeLayout
 import com.rogerneumann.vakt.data.VaktLiveData
+import com.rogerneumann.vakt.data.VehicleProfile
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.min
@@ -25,6 +28,11 @@ import kotlin.math.min
  *   Tap              — show hamburger menu (via click listener set in MainActivity)
  *                      or highlight the tapped gauge zone (ARC style only)
  *   Any touch        — briefly reveals mode labels on the dot indicator
+ *
+ * Slot-based rendering (Block 12c):
+ *   Set [slotAssignments] and [gaugeLayout] to drive slot-based draw paths.
+ *   When [gaugeLayout] is non-null the slot-based [GaugeRenderer.draw] overload is used;
+ *   otherwise the legacy overload drives the swipe-based styles.
  */
 class DashboardView @JvmOverloads constructor(
     context: Context,
@@ -35,6 +43,18 @@ class DashboardView @JvmOverloads constructor(
     private val renderer = GaugeRenderer()
     private var data: VaktLiveData = VaktLiveData()
     var theme: GaugeTheme = GaugeTheme.DARK
+        set(value) { field = value; postInvalidate() }
+
+    /** Active vehicle profile used for custom PID label/unit resolution. */
+    var vehicleProfile: VehicleProfile = VehicleProfile.DEFAULT
+        set(value) { field = value; postInvalidate() }
+
+    /** Slot short-name assignments for slot-based rendering. */
+    var slotAssignments: List<String?> = listOf(null, null, null, null)
+        set(value) { field = value; postInvalidate() }
+
+    /** Layout enum controlling which draw path is used. */
+    var gaugeLayout: GaugeLayout = GaugeLayout.GRID_4
         set(value) { field = value; postInvalidate() }
 
     var displayMode: DisplayMode = DisplayMode.GAUGES
@@ -108,6 +128,8 @@ class DashboardView @JvmOverloads constructor(
 
     fun updateData(newData: VaktLiveData) {
         data = newData
+        // Keep vehicleProfile in sync with live data profile if not overridden externally
+        vehicleProfile = newData.vehicleProfile
         postInvalidate()
     }
 
@@ -124,7 +146,10 @@ class DashboardView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        renderer.draw(canvas, data, displayMode, gaugeStyle, highlightedZone, showModeLabels, theme)
+
+        // Slot-based path: resolve slots and delegate to the new layout-aware draw overload
+        val slots = GaugeSlotResolver.resolve(data, slotAssignments, vehicleProfile)
+        renderer.draw(canvas, slots, gaugeLayout, theme)
     }
 
     private fun highlightZoneAt(x: Float, y: Float) {
