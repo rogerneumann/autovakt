@@ -207,7 +207,7 @@ class DashboardView @JvmOverloads constructor(
         canvas.drawColor(theme.background)
         val isLandscape = w > h
         if (isLandscape) {
-            val splitX = w * 0.58f
+            val splitX = w * 0.50f
             canvas.save()
             canvas.clipRect(0f, 0f, splitX, h)
             renderer.draw(canvas, slots, gaugeLayout, theme, splitX, h)
