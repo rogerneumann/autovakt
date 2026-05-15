@@ -16,6 +16,7 @@ import com.rogerneumann.vakt.data.GaugeLayout
 import com.rogerneumann.vakt.data.VaktLiveData
 import com.rogerneumann.vakt.data.VehicleLayoutManager
 import com.rogerneumann.vakt.data.VehicleProfile
+import com.rogerneumann.vakt.util.VaktDisplayState
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.min
@@ -62,7 +63,7 @@ class DashboardView @JvmOverloads constructor(
     var vehicleLayoutManager: VehicleLayoutManager? = null
         set(value) { field = value; postInvalidate() }
 
-    var displayMode: DisplayMode = DisplayMode.GAUGES
+    var displayMode: DisplayMode = DisplayMode.SPLIT
         private set
 
     var gaugeStyle: GaugeStyle = GaugeStyle.ARC
@@ -117,6 +118,12 @@ class DashboardView @JvmOverloads constructor(
                         modes[(current + 1) % modes.size]
                     } else {
                         modes[(current - 1 + modes.size) % modes.size]
+                    }
+                    // Sync to VaktDisplayState so VaktMediaBrowserService mirrors phone view
+                    VaktDisplayState.displayMode.value = when (displayMode) {
+                        DisplayMode.GAUGES -> "TELEMETRY"
+                        DisplayMode.SPLIT  -> "HYBRID"
+                        DisplayMode.MEDIA  -> "MEDIA"
                     }
                     postInvalidate()
                     true

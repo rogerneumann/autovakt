@@ -4,21 +4,21 @@ import android.content.ComponentName
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
+import android.media.session.PlaybackState
 import android.service.notification.NotificationListenerService
-import com.rogerneumann.vakt.data.OBD2Repository
+import android.service.notification.StatusBarNotification
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 /**
- * Listens for active media sessions from other apps (Spotify, etc.) 
+ * Listens for active media sessions from other apps (Spotify, etc.)
  * to provide metadata and remote control capabilities to Vakt.
  */
 @AndroidEntryPoint
 class VaktNotificationListener : NotificationListenerService() {
 
-    // Note: In a real Hilt setup, we would inject a manager here. 
-    // For now, we'll use a placeholder for the logic.
-    
+    @Inject lateinit var mediaRemoteManager: MediaRemoteManager
+
     private var mediaSessionManager: MediaSessionManager? = null
     private var activeController: MediaController? = null
 
@@ -28,24 +28,41 @@ class VaktNotificationListener : NotificationListenerService() {
         updateActiveSession()
     }
 
+    override fun onNotificationPosted(sbn: StatusBarNotification?) {
+        super.onNotificationPosted(sbn)
+        updateActiveSession()
+    }
+
     /**
-     * Finds the most relevant active media session.
+     * Finds the most relevant active media session and registers a callback.
      */
     private fun updateActiveSession() {
         val controllers = mediaSessionManager?.getActiveSessions(
             ComponentName(this, VaktNotificationListener::class.java)
         )
-        
+
         // Find the first playing session, or the first one available
-        activeController = controllers?.find { it.playbackState?.state == android.media.session.PlaybackState.STATE_PLAYING }
-            ?: controllers?.firstOrNull()
-            
+        activeController = controllers?.find {
+            it.playbackState?.state == PlaybackState.STATE_PLAYING
+        } ?: controllers?.firstOrNull()
+
         activeController?.registerCallback(object : MediaController.Callback() {
             override fun onMetadataChanged(metadata: MediaMetadata?) {
                 super.onMetadataChanged(metadata)
-                // TODO: Relay title, artist, and package to OBD2Repository/LiveData
+                val title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE) ?: ""
+                val artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: ""
+                val packageName = activeController?.packageName ?: ""
+                mediaRemoteManager.updateMetadata(title, artist, packageName)
             }
         })
+
+        // Emit current metadata immediately if controller already has it
+        activeController?.metadata?.let { metadata ->
+            val title = metadata.getString(MediaMetadata.METADATA_KEY_TITLE) ?: ""
+            val artist = metadata.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: ""
+            val packageName = activeController?.packageName ?: ""
+            mediaRemoteManager.updateMetadata(title, artist, packageName)
+        }
     }
 
     /**
