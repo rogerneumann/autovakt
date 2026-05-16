@@ -10,7 +10,7 @@ import java.net.URL
 object UpdateChecker {
 
     private const val API_URL =
-        "https://api.github.com/repos/rogerneumann/telemetrix/releases/latest"
+        "https://api.github.com/repos/rogerneumann/autovakt/releases/latest"
 
     /**
      * Checks GitHub releases in the background. Calls [onUpdateAvailable] on the main thread
