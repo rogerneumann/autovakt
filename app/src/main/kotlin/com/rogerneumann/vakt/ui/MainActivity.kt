@@ -37,6 +37,7 @@ import com.rogerneumann.vakt.service.OBD2ForegroundService
 import com.rogerneumann.vakt.ui.history.HistoryActivity
 import com.rogerneumann.vakt.ui.scan.DeviceScanFragment
 import com.rogerneumann.vakt.BuildConfig
+import com.rogerneumann.vakt.media.MediaRemoteManager
 import com.rogerneumann.vakt.util.LogShareManager
 import com.rogerneumann.vakt.util.UpdateChecker
 import dagger.hilt.android.AndroidEntryPoint
@@ -58,6 +59,7 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var profileManager: VehicleProfileManager
     @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
     @Inject lateinit var logShareManager: LogShareManager
+    @Inject lateinit var mediaRemoteManager: MediaRemoteManager
 
     private var titleTapCount = 0
     private var hamburgerPulseAnimator: ObjectAnimator? = null
@@ -98,6 +100,10 @@ class MainActivity : AppCompatActivity() {
         setupNavVersion()
         setupDemoEasterEgg()
         binding.dashboardView.vehicleLayoutManager = vehicleLayoutManager
+        binding.dashboardView.mediaRemoteManager   = mediaRemoteManager
+        binding.dashboardView.onLaunchMediaApp     = { pkg ->
+            packageManager.getLaunchIntentForPackage(pkg)?.let { startActivity(it) }
+        }
         observeLiveData()
         FirstRunWizardManager(this, sharedPreferences, profileHub, profileManager) {
             // Callback: wizard was skipped or completed without pairing

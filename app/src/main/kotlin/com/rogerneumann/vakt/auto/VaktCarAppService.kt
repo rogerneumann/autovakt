@@ -9,6 +9,7 @@ import com.rogerneumann.vakt.auto.screens.DashboardScreen
 import com.rogerneumann.vakt.data.LightingManager
 import com.rogerneumann.vakt.data.OBD2Repository
 import com.rogerneumann.vakt.data.VehicleLayoutManager
+import com.rogerneumann.vakt.media.MediaRemoteManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -18,22 +19,24 @@ class VaktCarAppService : CarAppService() {
     @Inject lateinit var repository: OBD2Repository
     @Inject lateinit var lightingManager: LightingManager
     @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
+    @Inject lateinit var mediaRemoteManager: MediaRemoteManager
 
     override fun createHostValidator(): HostValidator {
         return HostValidator.ALLOW_ALL_HOSTS_VALIDATOR
     }
 
     override fun onCreateSession(): Session {
-        return VaktSession(repository, lightingManager, vehicleLayoutManager)
+        return VaktSession(repository, lightingManager, vehicleLayoutManager, mediaRemoteManager)
     }
 }
 
 class VaktSession(
     private val repository: OBD2Repository,
     private val lightingManager: LightingManager,
-    private val vehicleLayoutManager: VehicleLayoutManager
+    private val vehicleLayoutManager: VehicleLayoutManager,
+    private val mediaRemoteManager: MediaRemoteManager
 ) : Session() {
     override fun onCreateScreen(intent: Intent): Screen {
-        return DashboardScreen(carContext, repository, lightingManager, vehicleLayoutManager)
+        return DashboardScreen(carContext, repository, lightingManager, vehicleLayoutManager, mediaRemoteManager)
     }
 }

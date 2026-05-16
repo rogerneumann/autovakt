@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
+import android.view.KeyEvent
 import androidx.car.app.AppManager
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
@@ -22,6 +23,8 @@ import com.rogerneumann.vakt.data.LightingManager
 import com.rogerneumann.vakt.data.OBD2Repository
 import com.rogerneumann.vakt.data.VaktLiveData
 import com.rogerneumann.vakt.data.VehicleLayoutManager
+import com.rogerneumann.vakt.media.MediaRemoteManager
+import kotlin.math.min
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -46,7 +49,8 @@ class DashboardScreen(
     carContext: CarContext,
     private val repository: OBD2Repository,
     private val lightingManager: LightingManager,
-    private val vehicleLayoutManager: VehicleLayoutManager
+    private val vehicleLayoutManager: VehicleLayoutManager,
+    private val mediaRemoteManager: MediaRemoteManager
 ) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
 
     private val renderer = GaugeRenderer()
@@ -74,6 +78,9 @@ class DashboardScreen(
         isAntiAlias = true
     }
 
+    private var cachedAppPackage: String? = null
+    private var cachedAppLabel:   String? = null
+
     init {
         lifecycle.addObserver(this)
         carContext.getCarService(AppManager::class.java).setSurfaceCallback(this)
@@ -98,13 +105,12 @@ class DashboardScreen(
 
     override fun onGetTemplate(): Template {
         return layoutManager.buildTemplate(
-            data       = lastData,
-            onNewTrip  = {
-                lifecycleScope.launch {
-                    repository.startManualTrip()
-                }
-            },
-            onCycleView = { invalidate() }
+            data        = lastData,
+            onNewTrip   = { lifecycleScope.launch { repository.startManualTrip() } },
+            onCycleView = { invalidate() },
+            onPrev      = { mediaRemoteManager.dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS) },
+            onPlayPause = { mediaRemoteManager.dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) },
+            onNext      = { mediaRemoteManager.dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_NEXT) }
         )
     }
 
@@ -174,107 +180,108 @@ class DashboardScreen(
         renderer.draw(canvas, slots, layout, currentTheme)
     }
 
-    /** Full media: dark background with centered song + artist text. */
+    /** Full media: dark background with song info (controls are in the action strip). */
     private fun renderMedia(canvas: Canvas) {
         val w = canvas.width.toFloat()
         val h = canvas.height.toFloat()
         val bg = if (currentTheme == GaugeTheme.LIGHT) Color.WHITE else Color.BLACK
         canvas.drawColor(bg)
-
-        val textColor = if (currentTheme == GaugeTheme.LIGHT) Color.BLACK else Color.WHITE
-        val cx = w / 2f
-        val cy = h / 2f
-
-        val hasMedia = !lastData.currentSongTitle.isNullOrBlank()
-
-        // Music note icon
-        overlayPaint.color  = currentTheme.accent
-        overlayPaint.textSize = h * 0.18f
-        canvas.drawText("♪", cx, cy - h * 0.18f, overlayPaint)
-
-        // Song title
-        overlayPaint.color    = textColor
-        overlayPaint.textSize = h * 0.11f
-        val title = if (hasMedia) lastData.currentSongTitle!! else "No media playing"
-        canvas.drawText(title.take(50), cx, cy + h * 0.02f, overlayPaint)
-
-        // Artist
-        if (hasMedia) {
-            overlayPaint.color    = Color.argb(200, 180, 180, 180)
-            overlayPaint.textSize = h * 0.08f
-            val artist = lastData.currentSongArtist ?: ""
-            if (artist.isNotBlank()) {
-                canvas.drawText(artist.take(50), cx, cy + h * 0.13f, overlayPaint)
-            }
-        }
-
-        // Skip labels
-        overlayPaint.color    = Color.argb(160, 200, 200, 200)
-        overlayPaint.textSize = h * 0.07f
-        canvas.drawText("◀◀ Prev", cx * 0.38f, h * 0.88f, overlayPaint)
-        canvas.drawText("Next ▶▶", cx * 1.62f, h * 0.88f, overlayPaint)
+        drawMediaSection(canvas, 0f, 0f, w, h)
+        drawModeDots(canvas, w, h)
     }
 
     /**
-     * Hybrid: telemetry gauges in upper half, media strip in lower half.
-     * Upper half uses GaugeRenderer clipped to top portion; lower half draws text.
+     * Hybrid: telemetry gauges in upper 50%, media strip in lower 50%.
+     * Controls are in the action strip — no canvas buttons needed.
      */
     private fun renderHybrid(canvas: Canvas) {
-        val w = canvas.width.toFloat()
-        val h = canvas.height.toFloat()
-        val splitY = h * 0.58f
+        val w      = canvas.width.toFloat()
+        val h      = canvas.height.toFloat()
+        val splitY = h * 0.50f
 
         val bg = if (currentTheme == GaugeTheme.LIGHT) Color.WHITE else Color.BLACK
         canvas.drawColor(bg)
 
-        // ── Upper half: telemetry via GaugeRenderer into a sub-canvas clip ────
+        // ── Upper half: gauges clipped and scaled to the top 50% ─────────────
         canvas.save()
         canvas.clipRect(0f, 0f, w, splitY)
-
         val layout      = vehicleLayoutManager.getLayout(layoutKey, carContext, isAA = true)
         val assignments = vehicleLayoutManager.getSlotAssignments(layoutKey)
         val profile     = lastData.vehicleProfile
         val slots       = GaugeSlotResolver.resolve(lastData, assignments, profile, vehicleLayoutManager)
-        renderer.draw(canvas, slots, layout, currentTheme)
-
+        renderer.draw(canvas, slots, layout, currentTheme, w, splitY)
         canvas.restore()
 
-        // ── Divider ────────────────────────────────────────────────────────────
+        // ── Divider ───────────────────────────────────────────────────────────
         dividerPaint.color = currentTheme.accent
         canvas.drawLine(w * 0.05f, splitY, w * 0.95f, splitY, dividerPaint)
 
-        // ── Lower half: media strip ────────────────────────────────────────────
-        val textColor = if (currentTheme == GaugeTheme.LIGHT) Color.BLACK else Color.WHITE
-        val cx  = w / 2f
-        val mcy = splitY + (h - splitY) / 2f
+        // ── Lower half: media strip ───────────────────────────────────────────
+        drawMediaSection(canvas, 0f, splitY, w, h)
+        drawModeDots(canvas, w, h)
+    }
 
+    private fun drawMediaSection(canvas: Canvas, x0: Float, y0: Float, x1: Float, y1: Float) {
+        val cw = x1 - x0
+        val ch = y1 - y0
+        val cx = x0 + cw / 2f
         val hasMedia = !lastData.currentSongTitle.isNullOrBlank()
+        val refDim = min(cw, ch)
+        val textColor = if (currentTheme == GaugeTheme.LIGHT) Color.BLACK else Color.WHITE
 
-        overlayPaint.color    = textColor
-        overlayPaint.textSize = (h - splitY) * 0.26f
-        val title = if (hasMedia) lastData.currentSongTitle!! else "No media playing"
-        canvas.drawText(title.take(50), cx, mcy - (h - splitY) * 0.05f, overlayPaint)
+        // App icon (tappable via action strip — visual indicator only on canvas)
+        overlayPaint.textSize = refDim * 0.20f
+        overlayPaint.color = currentTheme.accent
+        overlayPaint.alpha = if (hasMedia) 200 else 80
+        canvas.drawText("♫", cx, y0 + ch * 0.22f, overlayPaint)
 
-        if (hasMedia) {
-            overlayPaint.color    = Color.argb(180, 180, 180, 180)
-            overlayPaint.textSize = (h - splitY) * 0.18f
-            val artist = lastData.currentSongArtist ?: ""
-            if (artist.isNotBlank()) {
-                canvas.drawText(artist.take(50), cx, mcy + (h - splitY) * 0.16f, overlayPaint)
-            }
+        val appLabel = resolveAppLabel(lastData.activeMediaAppPackage)
+        if (!appLabel.isNullOrBlank()) {
+            overlayPaint.textSize = refDim * 0.07f
+            overlayPaint.alpha = 160
+            canvas.drawText(appLabel, cx, y0 + ch * 0.22f + refDim * 0.10f, overlayPaint)
         }
 
-        // Mode indicator dots at bottom
+        // Song title
+        overlayPaint.color = textColor
+        overlayPaint.alpha = if (hasMedia) 255 else 120
+        overlayPaint.textSize = refDim * 0.11f
+        val title = if (hasMedia) lastData.currentSongTitle!!.take(40) else "No media playing"
+        canvas.drawText(title, cx, y0 + ch * 0.52f, overlayPaint)
+
+        // Artist
+        if (hasMedia && !lastData.currentSongArtist.isNullOrBlank()) {
+            overlayPaint.color = Color.argb(200, 180, 180, 180)
+            overlayPaint.alpha = 200
+            overlayPaint.textSize = refDim * 0.08f
+            canvas.drawText(lastData.currentSongArtist!!.take(40), cx, y0 + ch * 0.63f, overlayPaint)
+        }
+
+        overlayPaint.alpha = 255
+    }
+
+    private fun drawModeDots(canvas: Canvas, w: Float, h: Float) {
+        val cx     = w / 2f
         val dotY   = h - 18f
         val dotR   = 6f
         val dotGap = 20f
-        val modes  = DashboardDisplayMode.values()
         val dotPaint = Paint().apply { isAntiAlias = true }
-        modes.forEachIndexed { i, mode ->
+        DashboardDisplayMode.values().forEachIndexed { i, mode ->
             val dotX = cx + (i - 1) * dotGap
             dotPaint.color = if (mode == displayMode) currentTheme.accent else Color.argb(80, 200, 200, 200)
             canvas.drawCircle(dotX, dotY, dotR, dotPaint)
         }
+    }
+
+    private fun resolveAppLabel(pkg: String?): String? {
+        if (pkg.isNullOrBlank()) return null
+        if (pkg == cachedAppPackage) return cachedAppLabel
+        cachedAppPackage = pkg
+        cachedAppLabel = try {
+            val info = carContext.packageManager.getApplicationInfo(pkg, 0)
+            carContext.packageManager.getApplicationLabel(info).toString()
+        } catch (e: Exception) { null }
+        return cachedAppLabel
     }
 
     override fun onStart(owner: LifecycleOwner) { /* service lifecycle managed externally */ }

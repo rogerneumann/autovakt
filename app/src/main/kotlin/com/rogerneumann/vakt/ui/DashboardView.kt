@@ -4,12 +4,15 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.GestureDetector
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import com.rogerneumann.vakt.auto.render.DisplayMode
+import com.rogerneumann.vakt.media.MediaRemoteManager
 import com.rogerneumann.vakt.auto.render.GaugeRenderer
 import com.rogerneumann.vakt.auto.render.GaugeSlot
 import com.rogerneumann.vakt.auto.render.GaugeSlotResolver
@@ -67,6 +70,12 @@ class DashboardView @JvmOverloads constructor(
     var vehicleLayoutManager: VehicleLayoutManager? = null
         set(value) { field = value; postInvalidate() }
 
+    /** Injected by the host Activity to dispatch media key events. */
+    var mediaRemoteManager: MediaRemoteManager? = null
+
+    /** Invoked with the active media app package name when the user taps the app icon. */
+    var onLaunchMediaApp: ((String) -> Unit)? = null
+
     var displayMode: DisplayMode = DisplayMode.SPLIT
         private set
 
@@ -84,6 +93,15 @@ class DashboardView @JvmOverloads constructor(
         highlightedZone = null
         postInvalidate()
     }
+
+    private val mediaPrevRect = RectF()
+    private val mediaPlayRect = RectF()
+    private val mediaNextRect = RectF()
+    private val mediaAppRect  = RectF()
+    private val mediaZoneRect = RectF()
+
+    private var cachedAppPackage: String? = null
+    private var cachedAppLabel:   String? = null
 
     private val mediaPaint = Paint().apply {
         isAntiAlias = true
@@ -150,6 +168,21 @@ class DashboardView @JvmOverloads constructor(
         }
 
         override fun onSingleTapUp(e: MotionEvent): Boolean {
+            if (displayMode != DisplayMode.GAUGES && mediaZoneRect.contains(e.x, e.y)) {
+                when {
+                    mediaPrevRect.contains(e.x, e.y) ->
+                        mediaRemoteManager?.dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+                    mediaPlayRect.contains(e.x, e.y) ->
+                        mediaRemoteManager?.dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+                    mediaNextRect.contains(e.x, e.y) ->
+                        mediaRemoteManager?.dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_NEXT)
+                    mediaAppRect.contains(e.x, e.y) -> {
+                        val pkg = data.activeMediaAppPackage
+                        if (!pkg.isNullOrBlank()) onLaunchMediaApp?.invoke(pkg)
+                    }
+                }
+                return true
+            }
             highlightZoneAt(e.x, e.y)
             return false  // let click listener fire for hamburger reveal
         }
@@ -231,34 +264,74 @@ class DashboardView @JvmOverloads constructor(
         val cw = x1 - x0
         val ch = y1 - y0
         val cx = x0 + cw / 2f
-        val cy = y0 + ch / 2f
         val hasMedia = !data.currentSongTitle.isNullOrBlank()
         val refDim = min(cw, ch)
 
+        mediaZoneRect.set(x0, y0, x1, y1)
         mediaPaint.textAlign = Paint.Align.CENTER
 
-        // Music note icon
+        // ── App icon (tappable — opens the source media app) ─────────────
+        val iconSize  = refDim * 0.20f
+        val iconBaseY = y0 + ch * 0.22f
+        mediaPaint.textSize = iconSize
         mediaPaint.color = theme.accent
         mediaPaint.alpha = if (hasMedia) 200 else 80
-        mediaPaint.textSize = refDim * 0.20f
-        canvas.drawText("♫", cx, cy - refDim * 0.18f, mediaPaint)
+        canvas.drawText("♫", cx, iconBaseY, mediaPaint)
+        mediaAppRect.set(cx - iconSize, iconBaseY - iconSize, cx + iconSize, iconBaseY + iconSize * 0.3f)
 
-        // Song title
+        val appLabel = resolveAppLabel(data.activeMediaAppPackage)
+        if (!appLabel.isNullOrBlank()) {
+            mediaPaint.textSize = refDim * 0.07f
+            mediaPaint.alpha = 160
+            canvas.drawText(appLabel, cx, iconBaseY + refDim * 0.10f, mediaPaint)
+            mediaAppRect.bottom = iconBaseY + refDim * 0.13f
+        }
+
+        // ── Song title ───────────────────────────────────────────────────
         mediaPaint.color = theme.text
         mediaPaint.alpha = if (hasMedia) 255 else 120
-        mediaPaint.textSize = refDim * 0.12f
-        val title = if (hasMedia) data.currentSongTitle!!.take(45) else "No media playing"
-        canvas.drawText(title, cx, cy + refDim * 0.05f, mediaPaint)
+        mediaPaint.textSize = refDim * 0.11f
+        val title = if (hasMedia) data.currentSongTitle!!.take(40) else "No media playing"
+        canvas.drawText(title, cx, y0 + ch * 0.52f, mediaPaint)
 
-        // Artist
+        // ── Artist ───────────────────────────────────────────────────────
         if (hasMedia && !data.currentSongArtist.isNullOrBlank()) {
             mediaPaint.color = theme.textSecondary
             mediaPaint.alpha = 200
-            mediaPaint.textSize = refDim * 0.09f
-            canvas.drawText(data.currentSongArtist!!.take(45), cx, cy + refDim * 0.20f, mediaPaint)
+            mediaPaint.textSize = refDim * 0.08f
+            canvas.drawText(data.currentSongArtist!!.take(40), cx, y0 + ch * 0.63f, mediaPaint)
         }
 
+        // ── Transport controls: ⏮  ⏯  ⏭ ────────────────────────────────
+        val ctrlY   = y0 + ch * 0.82f
+        val btnSize = refDim * 0.17f
+        val btnHitR = refDim * 0.13f
+        val prevX   = cx - refDim * 0.28f
+        val nextX   = cx + refDim * 0.28f
+
+        mediaPaint.color = theme.text
+        mediaPaint.alpha = if (hasMedia) 220 else 80
+        mediaPaint.textSize = btnSize
+        canvas.drawText("⏮", prevX, ctrlY + btnSize * 0.35f, mediaPaint)
+        canvas.drawText("⏯", cx,    ctrlY + btnSize * 0.35f, mediaPaint)
+        canvas.drawText("⏭", nextX, ctrlY + btnSize * 0.35f, mediaPaint)
+
+        mediaPrevRect.set(prevX - btnHitR, ctrlY - btnHitR, prevX + btnHitR, ctrlY + btnHitR)
+        mediaPlayRect.set(cx    - btnHitR, ctrlY - btnHitR, cx    + btnHitR, ctrlY + btnHitR)
+        mediaNextRect.set(nextX - btnHitR, ctrlY - btnHitR, nextX + btnHitR, ctrlY + btnHitR)
+
         mediaPaint.alpha = 255
+    }
+
+    private fun resolveAppLabel(pkg: String?): String? {
+        if (pkg.isNullOrBlank()) return null
+        if (pkg == cachedAppPackage) return cachedAppLabel
+        cachedAppPackage = pkg
+        cachedAppLabel = try {
+            val info = context.packageManager.getApplicationInfo(pkg, 0)
+            context.packageManager.getApplicationLabel(info).toString()
+        } catch (e: Exception) { null }
+        return cachedAppLabel
     }
 
     private fun drawModeDots(canvas: Canvas, w: Float, h: Float) {
@@ -281,12 +354,12 @@ class DashboardView @JvmOverloads constructor(
 
         val gaugeW = when (displayMode) {
             DisplayMode.GAUGES -> w
-            DisplayMode.SPLIT  -> if (isLandscape) w * 0.58f else w
+            DisplayMode.SPLIT  -> if (isLandscape) w * 0.50f else w
             DisplayMode.MEDIA  -> return
         }
         val gaugeH = when (displayMode) {
             DisplayMode.GAUGES -> h
-            DisplayMode.SPLIT  -> if (isLandscape) h else h * 0.58f
+            DisplayMode.SPLIT  -> if (isLandscape) h else h * 0.50f
             DisplayMode.MEDIA  -> return
         }
 

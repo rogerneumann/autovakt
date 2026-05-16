@@ -59,86 +59,82 @@ class MultiPaneLayoutManager(private val carContext: CarContext) {
     fun buildTemplate(
         data: VaktLiveData,
         onNewTrip: () -> Unit,
-        onCycleView: () -> Unit
+        onCycleView: () -> Unit,
+        onPrev: () -> Unit = {},
+        onPlayPause: () -> Unit = {},
+        onNext: () -> Unit = {}
     ): Template {
         val mode = getCurrentMode()
         return when (mode) {
-            DisplayMode.WIDE        -> buildWideTemplate(data, onNewTrip, onCycleView)
-            DisplayMode.FULL_SCREEN -> buildFullTemplate(data, onNewTrip, onCycleView)
-            DisplayMode.NARROW      -> buildNarrowTemplate(data, onNewTrip)
+            DisplayMode.WIDE        -> buildWideTemplate(data, onNewTrip, onCycleView, onPrev, onPlayPause, onNext)
+            DisplayMode.FULL_SCREEN -> buildFullTemplate(data, onNewTrip, onCycleView, onPrev, onPlayPause, onNext)
+            DisplayMode.NARROW      -> buildNarrowTemplate(data, onNewTrip, onPlayPause)
         }
     }
 
-    // ── Wide display: show both New Trip AND Cycle View actions ──────────────
+    // ── Wide display: all media controls + New Trip; Cycle View in map strip ───
 
     private fun buildWideTemplate(
         data: VaktLiveData,
         onNewTrip: () -> Unit,
-        onCycleView: () -> Unit
+        onCycleView: () -> Unit,
+        onPrev: () -> Unit,
+        onPlayPause: () -> Unit,
+        onNext: () -> Unit
     ): Template = NavigationTemplate.Builder()
         .setActionStrip(
             ActionStrip.Builder()
-                .addAction(
-                    Action.Builder()
-                        .setTitle("Cycle View")
-                        .setOnClickListener(onCycleView)
-                        .build()
-                )
-                .addAction(
-                    Action.Builder()
-                        .setTitle("New Trip")
-                        .setOnClickListener(onNewTrip)
-                        .build()
-                )
-                .build()
-        )
-        .setBackgroundColor(connectionColor(data))
-        .build()
-
-    // ── Standard full-screen: primary action + map action strip ──────────────
-
-    private fun buildFullTemplate(
-        data: VaktLiveData,
-        onNewTrip: () -> Unit,
-        onCycleView: () -> Unit
-    ): Template = NavigationTemplate.Builder()
-        .setActionStrip(
-            ActionStrip.Builder()
-                .addAction(
-                    Action.Builder()
-                        .setTitle("New Trip")
-                        .setOnClickListener(onNewTrip)
-                        .build()
-                )
+                .addAction(Action.Builder().setTitle("⏮").setOnClickListener(onPrev).build())
+                .addAction(Action.Builder().setTitle("⏯").setOnClickListener(onPlayPause).build())
+                .addAction(Action.Builder().setTitle("⏭").setOnClickListener(onNext).build())
+                .addAction(Action.Builder().setTitle("New Trip").setOnClickListener(onNewTrip).build())
                 .build()
         )
         .setMapActionStrip(
             ActionStrip.Builder()
-                .addAction(
-                    Action.Builder()
-                        .setTitle("⟳")
-                        .setOnClickListener(onCycleView)
-                        .build()
-                )
+                .addAction(Action.Builder().setTitle("⟳").setOnClickListener(onCycleView).build())
                 .build()
         )
         .setBackgroundColor(connectionColor(data))
         .build()
 
-    // ── Narrow display: minimal — only New Trip ───────────────────────────────
+    // ── Standard full-screen: ⏯ + New Trip in main; ⏮ / ⟳ / ⏭ in map strip ─
 
-    private fun buildNarrowTemplate(
+    private fun buildFullTemplate(
         data: VaktLiveData,
-        onNewTrip: () -> Unit
+        onNewTrip: () -> Unit,
+        onCycleView: () -> Unit,
+        onPrev: () -> Unit,
+        onPlayPause: () -> Unit,
+        onNext: () -> Unit
     ): Template = NavigationTemplate.Builder()
         .setActionStrip(
             ActionStrip.Builder()
-                .addAction(
-                    Action.Builder()
-                        .setTitle("New Trip")
-                        .setOnClickListener(onNewTrip)
-                        .build()
-                )
+                .addAction(Action.Builder().setTitle("⏯").setOnClickListener(onPlayPause).build())
+                .addAction(Action.Builder().setTitle("New Trip").setOnClickListener(onNewTrip).build())
+                .build()
+        )
+        .setMapActionStrip(
+            ActionStrip.Builder()
+                .addAction(Action.Builder().setTitle("⏮").setOnClickListener(onPrev).build())
+                .addAction(Action.Builder().setTitle("⟳").setOnClickListener(onCycleView).build())
+                .addAction(Action.Builder().setTitle("⏭").setOnClickListener(onNext).build())
+                .build()
+        )
+        .setBackgroundColor(connectionColor(data))
+        .build()
+
+    // ── Narrow display: ⏯ + New Trip ─────────────────────────────────────────
+
+    private fun buildNarrowTemplate(
+        data: VaktLiveData,
+        onNewTrip: () -> Unit,
+        onPlayPause: () -> Unit
+    ): Template = NavigationTemplate.Builder()
+        .setActionStrip(
+            ActionStrip.Builder()
+                .addAction(Action.Builder().setTitle("⏯").setOnClickListener(onPlayPause).build())
+                .addAction(Action.Builder().setTitle("New Trip").setOnClickListener(onNewTrip).build())
                 .build()
         )
         .setBackgroundColor(connectionColor(data))
