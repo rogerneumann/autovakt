@@ -49,8 +49,8 @@ class VaktNotificationListener : NotificationListenerService() {
         activeController?.registerCallback(object : MediaController.Callback() {
             override fun onMetadataChanged(metadata: MediaMetadata?) {
                 super.onMetadataChanged(metadata)
-                val title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE) ?: ""
-                val artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: ""
+                val title = extractTitle(metadata)
+                val artist = extractArtist(metadata)
                 val packageName = activeController?.packageName ?: ""
                 mediaRemoteManager.updateMetadata(title, artist, packageName)
             }
@@ -58,12 +58,25 @@ class VaktNotificationListener : NotificationListenerService() {
 
         // Emit current metadata immediately if controller already has it
         activeController?.metadata?.let { metadata ->
-            val title = metadata.getString(MediaMetadata.METADATA_KEY_TITLE) ?: ""
-            val artist = metadata.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: ""
+            val title = extractTitle(metadata)
+            val artist = extractArtist(metadata)
             val packageName = activeController?.packageName ?: ""
             mediaRemoteManager.updateMetadata(title, artist, packageName)
         }
     }
+
+    // Music apps (Spotify, YT Music) use TITLE/ARTIST.
+    // Video apps (YouTube) use DISPLAY_TITLE/DISPLAY_SUBTITLE; ARTIST is null.
+    private fun extractTitle(metadata: MediaMetadata?): String =
+        metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)
+            ?: metadata?.getString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE)
+            ?: ""
+
+    private fun extractArtist(metadata: MediaMetadata?): String =
+        metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST)
+            ?: metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST)
+            ?: metadata?.getString(MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE)
+            ?: ""
 
     /**
      * Proxy for media commands (Play/Pause/Skip)
