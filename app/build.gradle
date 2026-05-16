@@ -5,8 +5,37 @@ plugins {
     id 'com.google.dagger.hilt.android'
 }
 
-def buildDate = new Date().format('yyyy.MM.dd')
-def buildCode = new Date().format('yyyyMMdd').toInteger()
+// ── Version: yyyyMMdd.N (e.g. "20260516.1", "20260516.2") ────────────────────
+def versionPropsFile = file("${rootDir}/version.properties")
+def versionProps = new Properties()
+def todayStr = new Date().format('yyyyMMdd')
+
+if (versionPropsFile.exists()) {
+    versionPropsFile.withInputStream { versionProps.load(it) }
+}
+
+def lastDate = versionProps.getProperty('lastDate', '')
+def currentIteration = versionProps.getProperty('iteration', '0').toInteger()
+
+// Only increment on assemble/publish runs — not on gradle sync or clean
+def isBuilding = gradle.startParameter.taskNames.any {
+    it.toLowerCase().contains('assemble') ||
+    it.toLowerCase().contains('bundle') ||
+    it.toLowerCase().contains('publish')
+}
+
+def buildIteration
+if (isBuilding) {
+    buildIteration = (lastDate == todayStr) ? currentIteration + 1 : 1
+    versionProps['lastDate'] = todayStr
+    versionProps['iteration'] = buildIteration.toString()
+    versionPropsFile.withOutputStream { versionProps.store(it, null) }
+} else {
+    buildIteration = (lastDate == todayStr) ? currentIteration : 1
+}
+
+def buildDate = "${todayStr}.${buildIteration}"              // e.g. "20260516.1"
+def buildCode = todayStr.toInteger() * 100 + buildIteration  // e.g. 2026051601 (< 2.1B limit)
 
 android {
     namespace 'com.rogerneumann.vakt'
@@ -48,9 +77,8 @@ android {
 }
 
 // ── GitHub Release publisher ─────────────────────────────────────────────────
-// Usage: ./gradlew publishRelease
+// Runs automatically after every assembleDebug. Also: ./gradlew publishRelease
 // Requires: gh CLI authenticated (gh auth login)
-// Same-day rebuilds overwrite the existing release asset automatically.
 task publishRelease(dependsOn: 'assembleDebug') {
     group = 'publishing'
     description = 'Assembles the debug APK and creates/updates a GitHub Release.'
@@ -81,6 +109,10 @@ task publishRelease(dependsOn: 'assembleDebug') {
             }
         }
     }
+}
+
+afterEvaluate {
+    assembleDebug.finalizedBy publishRelease
 }
 
 dependencies {
