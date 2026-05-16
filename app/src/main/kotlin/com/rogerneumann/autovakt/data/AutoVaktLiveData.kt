@@ -6,7 +6,7 @@ import com.rogerneumann.autovakt.obd2.DeviceCapability
 /**
  * Core telemetry data class representing the state of the Chevrolet Bolt EUV.
  */
-data class VaktLiveData(
+data class AutoVaktLiveData(
     val soc: Float? = null,              // Displayed %, 0-100
     val hvVoltage: Float? = null,         // Volts
     val hvCurrent: Float? = null,         // Amps (positive=discharge, negative=regen)

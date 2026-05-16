@@ -7,7 +7,7 @@ import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.Template
 import androidx.car.app.navigation.model.NavigationTemplate
-import com.rogerneumann.autovakt.data.VaktLiveData
+import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.obd2.ConnectionState
 
 /**
@@ -57,7 +57,7 @@ class MultiPaneLayoutManager(private val carContext: CarContext) {
      * @param onCycleView Callback fired when the user taps "Cycle View" (next metric set).
      */
     fun buildTemplate(
-        data: VaktLiveData,
+        data: AutoVaktLiveData,
         onNewTrip: () -> Unit,
         onCycleView: () -> Unit,
         onPrev: () -> Unit = {},
@@ -75,7 +75,7 @@ class MultiPaneLayoutManager(private val carContext: CarContext) {
     // ── Wide display: all media controls + New Trip; Cycle View in map strip ───
 
     private fun buildWideTemplate(
-        data: VaktLiveData,
+        data: AutoVaktLiveData,
         onNewTrip: () -> Unit,
         onCycleView: () -> Unit,
         onPrev: () -> Unit,
@@ -101,7 +101,7 @@ class MultiPaneLayoutManager(private val carContext: CarContext) {
     // ── Standard full-screen: ⏯ + New Trip in main; ⏮ / ⟳ / ⏭ in map strip ─
 
     private fun buildFullTemplate(
-        data: VaktLiveData,
+        data: AutoVaktLiveData,
         onNewTrip: () -> Unit,
         onCycleView: () -> Unit,
         onPrev: () -> Unit,
@@ -127,7 +127,7 @@ class MultiPaneLayoutManager(private val carContext: CarContext) {
     // ── Narrow display: ⏯ + New Trip ─────────────────────────────────────────
 
     private fun buildNarrowTemplate(
-        data: VaktLiveData,
+        data: AutoVaktLiveData,
         onNewTrip: () -> Unit,
         onPlayPause: () -> Unit
     ): Template = NavigationTemplate.Builder()
@@ -150,7 +150,7 @@ class MultiPaneLayoutManager(private val carContext: CarContext) {
      * Connecting  → YELLOW  (warning / scanning)
      * Error/Off   → RED     (needs attention)
      */
-    private fun connectionColor(data: VaktLiveData): CarColor = when (data.connectionState) {
+    private fun connectionColor(data: AutoVaktLiveData): CarColor = when (data.connectionState) {
         is ConnectionState.Connected   -> CarColor.DEFAULT
         is ConnectionState.Connecting  -> CarColor.YELLOW
         else                           -> CarColor.RED

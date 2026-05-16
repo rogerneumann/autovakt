@@ -7,7 +7,7 @@ import com.rogerneumann.autovakt.obd2.GmProtocolHandler
 import com.rogerneumann.autovakt.obd2.ObdParser
 import com.rogerneumann.autovakt.obd2.PidFormulaParser
 import com.rogerneumann.autovakt.obd2.TransportDelegate
-import com.rogerneumann.autovakt.obd2.VaktBridgeServer
+import com.rogerneumann.autovakt.obd2.AutoVaktBridgeServer
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,11 +27,11 @@ class OBD2Repository @Inject constructor(
     private val profileHub: VehicleProfileHub,
     private val vehicleLayoutManager: VehicleLayoutManager,
     private val pidCache: PidCache,
-    private val bridgeServer: VaktBridgeServer,
+    private val bridgeServer: AutoVaktBridgeServer,
     private val mediaRemoteManager: MediaRemoteManager
 ) {
-    private val _liveData = MutableStateFlow(VaktLiveData())
-    val liveData: StateFlow<VaktLiveData> = _liveData.asStateFlow()
+    private val _liveData = MutableStateFlow(AutoVaktLiveData())
+    val liveData: StateFlow<AutoVaktLiveData> = _liveData.asStateFlow()
 
     private val _layoutSuggestion = MutableStateFlow<String?>(null)
     val layoutSuggestion: StateFlow<String?> = _layoutSuggestion.asStateFlow()

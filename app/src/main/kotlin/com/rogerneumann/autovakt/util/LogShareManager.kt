@@ -72,7 +72,7 @@ class LogShareManager @Inject constructor(
                     append(logcat)
                 }
 
-                val shareFile = File(context.cacheDir, "vakt_diagnostics.txt")
+                val shareFile = File(context.cacheDir, "autovakt_diagnostics.txt")
                 shareFile.writeText(content)
 
                 val uri = FileProvider.getUriForFile(

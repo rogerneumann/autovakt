@@ -12,10 +12,10 @@ import javax.inject.Inject
 
 /**
  * Listens for active media sessions from other apps (Spotify, etc.)
- * to provide metadata and remote control capabilities to Vakt.
+ * to provide metadata and remote control capabilities to AutoVakt.
  */
 @AndroidEntryPoint
-class VaktNotificationListener : NotificationListenerService() {
+class AutoVaktNotificationListener : NotificationListenerService() {
 
     @Inject lateinit var mediaRemoteManager: MediaRemoteManager
 
@@ -38,7 +38,7 @@ class VaktNotificationListener : NotificationListenerService() {
      */
     private fun updateActiveSession() {
         val controllers = mediaSessionManager?.getActiveSessions(
-            ComponentName(this, VaktNotificationListener::class.java)
+            ComponentName(this, AutoVaktNotificationListener::class.java)
         )
 
         // Find the first playing session, or the first one available

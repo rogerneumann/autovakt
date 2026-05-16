@@ -24,7 +24,7 @@
         android:maxSdkVersion="32" />
 
     <application
-        android:name=".VaktApplication"
+        android:name=".AutoVaktApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -64,7 +64,7 @@
 
         <!-- Android Auto: Full-Screen Dashboard -->
         <service
-            android:name=".auto.VaktCarAppService"
+            android:name=".auto.AutoVaktCarAppService"
             android:exported="true"
             android:label="@string/app_name">
             <intent-filter>
@@ -78,7 +78,7 @@
 
         <!-- Android Auto: Media Browser (Mini-player / Secondary Slot) -->
         <service
-            android:name=".media.VaktMediaBrowserService"
+            android:name=".media.AutoVaktMediaBrowserService"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
@@ -93,7 +93,7 @@
 
         <!-- Notification Listener for Media Proxying -->
         <service
-            android:name=".media.VaktNotificationListener"
+            android:name=".media.AutoVaktNotificationListener"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
             android:exported="true">

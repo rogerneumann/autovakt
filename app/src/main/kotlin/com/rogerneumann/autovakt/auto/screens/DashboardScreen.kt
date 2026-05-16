@@ -21,7 +21,7 @@ import com.rogerneumann.autovakt.auto.render.GaugeSlotResolver
 import com.rogerneumann.autovakt.auto.render.GaugeTheme
 import com.rogerneumann.autovakt.data.LightingManager
 import com.rogerneumann.autovakt.data.OBD2Repository
-import com.rogerneumann.autovakt.data.VaktLiveData
+import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.data.VehicleLayoutManager
 import com.rogerneumann.autovakt.media.MediaRemoteManager
 import kotlin.math.min
@@ -56,7 +56,7 @@ class DashboardScreen(
     private val renderer = GaugeRenderer()
     private val layoutManager = MultiPaneLayoutManager(carContext)
 
-    private var lastData: VaktLiveData = VaktLiveData()
+    private var lastData: AutoVaktLiveData = AutoVaktLiveData()
     private var currentTheme: GaugeTheme = GaugeTheme.DARK
     private var currentSurfaceContainer: SurfaceContainer? = null
     private var displayMode: DashboardDisplayMode = DashboardDisplayMode.HYBRID
