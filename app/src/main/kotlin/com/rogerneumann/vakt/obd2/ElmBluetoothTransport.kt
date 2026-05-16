@@ -67,28 +67,20 @@ class ElmBluetoothTransport @Inject constructor(
                 val device = bluetoothAdapter.getRemoteDevice(deviceAddress)
                 bluetoothAdapter.cancelDiscovery()
 
-                // ELM327 clones universally use RFCOMM channel 1 but don't register
-                // SDP records. Reflection-based createRfcommSocket(1) bypasses the SDP
-                // lookup that causes silent hangs with createRfcommSocketToServiceRecord.
-                val newSocket: BluetoothSocket = try {
-                    val m = device.javaClass.getMethod("createRfcommSocket", Int::class.java)
-                    (m.invoke(device, 1) as BluetoothSocket).also {
-                        Log.d(TAG, "Using reflection socket (channel 1)")
-                    }
-                } catch (e: Exception) {
-                    Log.w(TAG, "Reflection socket unavailable, falling back to SPP UUID: ${e.message}")
-                    device.createInsecureRfcommSocketToServiceRecord(SPP_UUID)
-                }
+                // Strategy (matches pires/android-obd-reader consensus):
+                //   1. Public SDP path — works when the adapter registers a service record
+                //      and lets the OS find the actual RFCOMM channel (may not be 1).
+                //   2. Reflection fallback — createRfcommSocket(1) bypasses SDP entirely;
+                //      used by virtually all ELM327 clones which advertise on channel 1
+                //      but may not respond to SDP queries reliably on all BT stacks.
+                // Both attempts are wrapped in a 12 s timeout (superior to the Java reference
+                // implementations, which block indefinitely).
+                val newSocket = connectWithFallback(device)
                 socket = newSocket
 
-                val connected = withTimeoutOrNull(12_000L) {
-                    newSocket.connect()
-                    true
-                }
-
-                if (connected == null) {
-                    throw IOException("connect() timed out after 12 s")
-                }
+                // 500 ms settle — cheap adapters need time after connect() before they
+                // will ACK the first ELM327 ATZ command (observed in AndrOBD issue #233).
+                delay(500L)
 
                 inputStream  = newSocket.inputStream
                 outputStream = newSocket.outputStream
@@ -143,6 +135,45 @@ class ElmBluetoothTransport @Inject constructor(
 
             buffer.toString().trim()
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    private suspend fun connectWithFallback(device: android.bluetooth.BluetoothDevice): BluetoothSocket {
+        // Primary: public SDP path
+        val primary = device.createRfcommSocketToServiceRecord(SPP_UUID)
+        Log.d(TAG, "Trying SDP path (SPP UUID)")
+        val primaryOk = withTimeoutOrNull(12_000L) {
+            runCatching { primary.connect() }.isSuccess
+        } ?: false
+
+        if (primaryOk) {
+            Log.d(TAG, "SDP path connected")
+            return primary
+        }
+
+        // Primary failed — close it before opening a new socket
+        runCatching { primary.close() }
+        Log.w(TAG, "SDP path failed, trying reflection (channel 1)")
+
+        // Fallback: reflection createRfcommSocket(1) — bypasses SDP lookup
+        val fallback = try {
+            val m = device.javaClass.getMethod("createRfcommSocket", Int::class.java)
+            m.invoke(device, 1) as BluetoothSocket
+        } catch (e: Exception) {
+            throw IOException("Both socket paths failed (reflection unavailable: ${e.message})")
+        }
+
+        val fallbackOk = withTimeoutOrNull(12_000L) {
+            runCatching { fallback.connect() }.isSuccess
+        } ?: false
+
+        if (!fallbackOk) {
+            runCatching { fallback.close() }
+            throw IOException("connect() timed out on both SDP and reflection paths")
+        }
+
+        Log.d(TAG, "Reflection path (channel 1) connected")
+        return fallback
     }
 
     private fun startWatchdog() {
