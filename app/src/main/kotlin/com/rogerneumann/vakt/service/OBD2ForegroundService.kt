@@ -14,8 +14,10 @@ import com.rogerneumann.vakt.data.OBD2Repository
 import com.rogerneumann.vakt.obd2.TransportDelegate
 import com.rogerneumann.vakt.ui.scan.DeviceType
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -33,6 +35,7 @@ class OBD2ForegroundService : Service() {
     @Inject lateinit var classicTransport: com.rogerneumann.vakt.obd2.ElmBluetoothTransport
     @Inject lateinit var bleTransport: com.rogerneumann.vakt.obd2.ElmBleTransport
     private val channelId = "vakt_obd_service"
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
@@ -54,30 +57,18 @@ class OBD2ForegroundService : Service() {
         val deviceType = sharedPreferences.getString("saved_device_type", null)
 
         if (deviceAddress != null && deviceType != null) {
-            // Connect to the saved device
-            GlobalScope.launch(Dispatchers.IO) {
+            serviceScope.launch {
                 try {
-                    // Select appropriate transport based on device type
-                    val transport = if (deviceType == DeviceType.BLE.name) {
-                        bleTransport
-                    } else {
-                        classicTransport
-                    }
+                    val transport = if (deviceType == DeviceType.BLE.name) bleTransport else classicTransport
                     transportDelegate.setTransport(transport)
-
-                    // Connect to the device
                     transport.connect(deviceAddress)
-
-                    // Start the polling loop with real data
                     repository.start(useDemoMode = false)
                 } catch (e: Exception) {
-                    // Fallback to demo mode if connection fails
                     repository.start(useDemoMode = true)
                 }
             }
         } else {
-            // No device saved - start with demo mode
-            repository.start(useDemoMode = true)
+            serviceScope.launch { repository.start(useDemoMode = true) }
         }
 
         // Start the TCP bridge for 3rd party apps
@@ -100,6 +91,7 @@ class OBD2ForegroundService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        serviceScope.cancel()
         repository.stop()
         bridgeServer.stop()
     }
