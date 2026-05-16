@@ -76,13 +76,24 @@ class DeviceScanViewModel @Inject constructor(
                         val address = it.address
                         val name = it.name ?: "Unknown"
 
-                        deviceMap[address] = ScannedDevice(
-                            address = address,
-                            name = name,
-                            rssi = rssi,
-                            type = DeviceType.CLASSIC
-                        )
-                        updateDeviceList()
+                        // Honour what the device reports: LE-only or dual-mode devices
+                        // found during Classic inquiry should still connect via BLE.
+                        // Never downgrade an address already confirmed as BLE.
+                        val existingIsBle = deviceMap[address]?.type == DeviceType.BLE
+                        if (!existingIsBle) {
+                            val detectedType = when (it.type) {
+                                BluetoothDevice.DEVICE_TYPE_LE,
+                                BluetoothDevice.DEVICE_TYPE_DUAL -> DeviceType.BLE
+                                else -> DeviceType.CLASSIC
+                            }
+                            deviceMap[address] = ScannedDevice(
+                                address = address,
+                                name = name,
+                                rssi = rssi,
+                                type = detectedType
+                            )
+                            updateDeviceList()
+                        }
                     }
                 }
             }
