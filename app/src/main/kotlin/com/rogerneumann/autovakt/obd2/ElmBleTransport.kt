@@ -43,7 +43,7 @@ class ElmBleTransport @Inject constructor(
     private val bluetoothAdapter: BluetoothAdapter?
 ) : OBD2Transport {
 
-    private val TAG = "VaktBLE"
+    private val TAG = "AutoVaktBLE"
 
     // NUS (Nordic UART Service) — most ELM327 BLE clones
     private val NUS_SERVICE_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")

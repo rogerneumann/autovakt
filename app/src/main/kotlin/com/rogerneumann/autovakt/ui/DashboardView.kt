@@ -20,10 +20,10 @@ import com.rogerneumann.autovakt.auto.render.GaugeStyle
 import com.rogerneumann.autovakt.auto.render.GaugeTheme
 import com.rogerneumann.autovakt.auto.render.GaugeZone
 import com.rogerneumann.autovakt.data.GaugeLayout
-import com.rogerneumann.autovakt.data.VaktLiveData
+import com.rogerneumann.autovakt.data.AutoAutoVaktLiveData
 import com.rogerneumann.autovakt.data.VehicleLayoutManager
 import com.rogerneumann.autovakt.data.VehicleProfile
-import com.rogerneumann.autovakt.util.VaktDisplayState
+import com.rogerneumann.autovakt.util.AutoVaktDisplayState
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.min
@@ -50,7 +50,7 @@ class DashboardView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private val renderer = GaugeRenderer()
-    private var data: VaktLiveData = VaktLiveData()
+    private var data: AutoVaktLiveData = AutoVaktLiveData()
     var theme: GaugeTheme = GaugeTheme.DARK
         set(value) { field = value; postInvalidate() }
 
@@ -154,8 +154,8 @@ class DashboardView @JvmOverloads constructor(
                     } else {
                         modes[(current - 1 + modes.size) % modes.size]
                     }
-                    // Sync to VaktDisplayState so VaktMediaBrowserService mirrors phone view
-                    VaktDisplayState.displayMode.value = when (displayMode) {
+                    // Sync to AutoVaktDisplayState so AutoVaktMediaBrowserService mirrors phone view
+                    AutoVaktDisplayState.displayMode.value = when (displayMode) {
                         DisplayMode.GAUGES -> "TELEMETRY"
                         DisplayMode.SPLIT  -> "HYBRID"
                         DisplayMode.MEDIA  -> "MEDIA"
@@ -188,7 +188,7 @@ class DashboardView @JvmOverloads constructor(
         }
     })
 
-    fun updateData(newData: VaktLiveData) {
+    fun updateData(newData: AutoVaktLiveData) {
         data = newData
         // Keep vehicleProfile in sync with live data profile if not overridden externally
         vehicleProfile = newData.vehicleProfile

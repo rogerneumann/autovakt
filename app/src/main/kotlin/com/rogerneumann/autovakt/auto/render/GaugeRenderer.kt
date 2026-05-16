@@ -4,7 +4,7 @@ import android.graphics.*
 import com.rogerneumann.autovakt.data.GaugeLayout
 import com.rogerneumann.autovakt.data.PowertrainType
 import com.rogerneumann.autovakt.data.SlotDisplayType
-import com.rogerneumann.autovakt.data.VaktLiveData
+import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.obd2.ConnectionState
 import kotlin.math.min
 
@@ -332,7 +332,7 @@ class GaugeRenderer {
      */
     fun draw(
         canvas: Canvas,
-        data: VaktLiveData,
+        data: AutoVaktLiveData,
         displayMode: DisplayMode = DisplayMode.GAUGES,
         gaugeStyle: GaugeStyle = GaugeStyle.ARC,
         highlightZone: GaugeZone? = null,
@@ -378,7 +378,7 @@ class GaugeRenderer {
 
     private fun drawGaugeContent(
         canvas: Canvas, w: Float, h: Float,
-        data: VaktLiveData, highlightZone: GaugeZone?, gaugeStyle: GaugeStyle
+        data: AutoVaktLiveData, highlightZone: GaugeZone?, gaugeStyle: GaugeStyle
     ) {
         val dimAlpha = if (data.connectionState is ConnectionState.Disconnected) 80 else 255
 
@@ -395,7 +395,7 @@ class GaugeRenderer {
 
     private fun drawArcContent(
         canvas: Canvas, w: Float, h: Float,
-        data: VaktLiveData, alpha: Int, highlightZone: GaugeZone?
+        data: AutoVaktLiveData, alpha: Int, highlightZone: GaugeZone?
     ) {
         val cx     = w / 2f
         val radius = min(w, h) * 0.38f
@@ -418,7 +418,7 @@ class GaugeRenderer {
 
     private fun drawEvArc(
         canvas: Canvas, cx: Float, arcCy: Float, radius: Float,
-        w: Float, h: Float, alpha: Int, narrow: Boolean, data: VaktLiveData
+        w: Float, h: Float, alpha: Int, narrow: Boolean, data: AutoVaktLiveData
     ) {
         drawArcGauge(canvas, cx, arcCy, radius, alpha,
             fraction    = (data.soc ?: 0f) / 100f,
@@ -439,7 +439,7 @@ class GaugeRenderer {
 
     private fun drawIceGasArc(
         canvas: Canvas, cx: Float, arcCy: Float, radius: Float,
-        w: Float, h: Float, alpha: Int, narrow: Boolean, data: VaktLiveData
+        w: Float, h: Float, alpha: Int, narrow: Boolean, data: AutoVaktLiveData
     ) {
         drawArcGauge(canvas, cx, arcCy, radius, alpha,
             fraction    = (data.engineLoad ?: 0f) / 100f,
@@ -460,7 +460,7 @@ class GaugeRenderer {
 
     private fun drawIceDieselArc(
         canvas: Canvas, cx: Float, arcCy: Float, radius: Float,
-        w: Float, h: Float, alpha: Int, narrow: Boolean, data: VaktLiveData
+        w: Float, h: Float, alpha: Int, narrow: Boolean, data: AutoVaktLiveData
     ) {
         val boostPsi      = data.boostPressurePsi ?: 0f
         val boostFraction = ((boostPsi + 15f) / 45f).coerceIn(0f, 1f)
@@ -483,7 +483,7 @@ class GaugeRenderer {
 
     private fun drawUnknownArc(
         canvas: Canvas, cx: Float, arcCy: Float, radius: Float,
-        w: Float, h: Float, alpha: Int, data: VaktLiveData
+        w: Float, h: Float, alpha: Int, data: AutoVaktLiveData
     ) {
         drawArcGauge(canvas, cx, arcCy, radius, alpha,
             fraction    = (data.soc ?: 0f) / 100f,
@@ -497,7 +497,7 @@ class GaugeRenderer {
     // ── GRID style ────────────────────────────────────────────────────────────
 
     private fun drawGridContent(
-        canvas: Canvas, w: Float, h: Float, data: VaktLiveData, alpha: Int
+        canvas: Canvas, w: Float, h: Float, data: AutoVaktLiveData, alpha: Int
     ) {
         val pad   = 10f
         val cellW = (w - pad * 3f) / 2f
@@ -551,7 +551,7 @@ class GaugeRenderer {
     // ── TEXT style ────────────────────────────────────────────────────────────
 
     private fun drawTextContent(
-        canvas: Canvas, w: Float, h: Float, data: VaktLiveData, alpha: Int
+        canvas: Canvas, w: Float, h: Float, data: AutoVaktLiveData, alpha: Int
     ) {
         data class Row(val label: String, val value: String, val unit: String)
 
@@ -629,7 +629,7 @@ class GaugeRenderer {
     private fun drawMediaCard(
         canvas: Canvas,
         left: Float, top: Float, right: Float, bottom: Float,
-        data: VaktLiveData
+        data: AutoVaktLiveData
     ) {
         val cardW = right - left
         val cardH = bottom - top

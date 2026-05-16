@@ -29,7 +29,7 @@ import javax.inject.Inject
 class OBD2ForegroundService : Service() {
 
     @Inject lateinit var repository: OBD2Repository
-    @Inject lateinit var bridgeServer: com.rogerneumann.autovakt.obd2.VaktBridgeServer
+    @Inject lateinit var bridgeServer: com.rogerneumann.autovakt.obd2.AutoVaktBridgeServer
     @Inject lateinit var sharedPreferences: SharedPreferences
     @Inject lateinit var transportDelegate: TransportDelegate
     @Inject lateinit var classicTransport: com.rogerneumann.autovakt.obd2.ElmBluetoothTransport

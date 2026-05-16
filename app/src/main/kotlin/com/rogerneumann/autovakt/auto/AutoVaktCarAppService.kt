@@ -14,7 +14,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class VaktCarAppService : CarAppService() {
+class AutoVaktCarAppService : CarAppService() {
 
     @Inject lateinit var repository: OBD2Repository
     @Inject lateinit var lightingManager: LightingManager
@@ -26,11 +26,11 @@ class VaktCarAppService : CarAppService() {
     }
 
     override fun onCreateSession(): Session {
-        return VaktSession(repository, lightingManager, vehicleLayoutManager, mediaRemoteManager)
+        return AutoVaktSession(repository, lightingManager, vehicleLayoutManager, mediaRemoteManager)
     }
 }
 
-class VaktSession(
+class AutoVaktSession(
     private val repository: OBD2Repository,
     private val lightingManager: LightingManager,
     private val vehicleLayoutManager: VehicleLayoutManager,

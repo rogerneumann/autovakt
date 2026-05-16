@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.room.Room
 import com.rogerneumann.autovakt.db.TripDao
-import com.rogerneumann.autovakt.db.VaktDatabase
+import com.rogerneumann.autovakt.db.AutoVaktDatabase
 import com.rogerneumann.autovakt.util.CrashReporter
 import com.rogerneumann.autovakt.util.LocalCrashReporter
 import dagger.Binds
@@ -43,16 +43,16 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): VaktDatabase {
+    fun provideDatabase(@ApplicationContext context: Context): AutoVaktDatabase {
         return Room.databaseBuilder(
             context,
-            VaktDatabase::class.java,
+            AutoVaktDatabase::class.java,
             "autovakt_db"
         ).fallbackToDestructiveMigration().build()
     }
 
     @Provides
-    fun provideTripDao(db: VaktDatabase): TripDao = db.tripDao()
+    fun provideTripDao(db: AutoVaktDatabase): TripDao = db.tripDao()
 
     @Provides
     @Singleton

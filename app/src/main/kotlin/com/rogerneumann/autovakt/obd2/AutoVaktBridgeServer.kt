@@ -14,8 +14,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Vakt Bridge: A local TCP server that emulates a WiFi ELM327 adapter.
- * Allows other apps (like ABRP, Car Scanner) to connect to Vakt and
+ * AutoVakt Bridge: A local TCP server that emulates a WiFi ELM327 adapter.
+ * Allows other apps (like ABRP, Car Scanner) to connect to AutoVakt and
  * receive vehicle data via a shared-polling cache-backed architecture.
  *
  * Architecture:
@@ -25,7 +25,7 @@ import javax.inject.Singleton
  *   then the client waits up to 4s for a cache entry to appear.
  */
 @Singleton
-class VaktBridgeServer @Inject constructor(
+class AutoVaktBridgeServer @Inject constructor(
     private val queue: ElmCommandQueue,
     private val pidCache: PidCache
 ) {
@@ -45,7 +45,7 @@ class VaktBridgeServer @Inject constructor(
 
     /**
      * If false, incoming connections are immediately rejected to maximize
-     * bandwidth for Vakt's internal UI.
+     * bandwidth for AutoVakt's internal UI.
      */
     var isBridgeEnabled = true
 
@@ -80,7 +80,7 @@ class VaktBridgeServer @Inject constructor(
                     }
                 }
                 activePort = actualPort
-                Log.i("VaktBridge", "Bridge listening on port $actualPort")
+                Log.i("AutoVaktBridge", "Bridge listening on port $actualPort")
                 while (isActive) {
                     val client = try {
                         serverSocket?.accept()

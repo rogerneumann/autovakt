@@ -7,7 +7,7 @@ import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
 @HiltAndroidApp
-class VaktApplication : Application() {
+class AutoVaktApplication : Application() {
 
     @Inject lateinit var crashReporter: CrashReporter
 

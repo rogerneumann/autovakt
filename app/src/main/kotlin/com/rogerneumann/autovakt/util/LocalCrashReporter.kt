@@ -8,7 +8,7 @@ import javax.inject.Singleton
  * Local [CrashReporter] implementation.
  *
  * - Crashes: saved to file via [LogShareManager] so they survive the process death.
- * - Non-fatals and logs: written to logcat under tag "VaktDiag".
+ * - Non-fatals and logs: written to logcat under tag "AutoVaktDiag".
  * - Custom keys: logged as structured key=value entries.
  *
  * To migrate to Firebase Crashlytics, implement [CrashReporter] wrapping

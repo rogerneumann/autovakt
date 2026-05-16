@@ -36,7 +36,7 @@ import com.rogerneumann.autovakt.data.VehicleProfileHub
 import com.rogerneumann.autovakt.data.VehicleProfileManager
 import com.rogerneumann.autovakt.BuildConfig
 import com.rogerneumann.autovakt.databinding.ActivitySettingsBinding
-import com.rogerneumann.autovakt.obd2.VaktBridgeServer
+import com.rogerneumann.autovakt.obd2.AutoVaktBridgeServer
 import com.rogerneumann.autovakt.util.LogShareManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +51,7 @@ class SettingsActivity : AppCompatActivity() {
     @Inject lateinit var profileManager: VehicleProfileManager
     @Inject lateinit var lightingManager: LightingManager
     @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
-    @Inject lateinit var bridgeServer: VaktBridgeServer
+    @Inject lateinit var bridgeServer: AutoVaktBridgeServer
     @Inject lateinit var sharedPreferences: SharedPreferences
     @Inject lateinit var logShareManager: LogShareManager
 

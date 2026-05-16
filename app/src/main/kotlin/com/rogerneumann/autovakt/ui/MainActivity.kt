@@ -266,14 +266,14 @@ class MainActivity : AppCompatActivity() {
         menu.findItem(R.id.nav_change_adapter).isVisible = hasSaved
     }
 
-    private fun updatePreConnectionDim(data: com.rogerneumann.autovakt.data.VaktLiveData) {
+    private fun updatePreConnectionDim(data: com.rogerneumann.autovakt.data.AutoVaktLiveData) {
         val isConnected = data.connectionState is ConnectionState.Connected
         val hasSavedDevice = sharedPreferences.contains("saved_device_address")
         val showDim = !isConnected && !hasSavedDevice
         binding.viewDimScrim.visibility = if (showDim) View.VISIBLE else View.GONE
     }
 
-    private fun updateNavHeaderVehicle(data: com.rogerneumann.autovakt.data.VaktLiveData) {
+    private fun updateNavHeaderVehicle(data: com.rogerneumann.autovakt.data.AutoVaktLiveData) {
         val header = binding.navigationView.getHeaderView(0)
         val subtitle = header.findViewById<TextView>(R.id.navHeaderSubtitle)
         val profile = data.vehicleProfile

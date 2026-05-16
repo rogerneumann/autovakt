@@ -1,7 +1,7 @@
 package com.rogerneumann.autovakt.auto.render
 
 import com.rogerneumann.autovakt.data.SlotDisplayType
-import com.rogerneumann.autovakt.data.VaktLiveData
+import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.data.VehicleLayoutManager
 import com.rogerneumann.autovakt.data.VehicleProfile
 
@@ -13,12 +13,12 @@ object GaugeSlotResolver {
      * Resolves a list of slot assignments into renderable [GaugeSlot] instances.
      *
      * Priority:
-     * 1. Named fields in [VaktLiveData] via the hardcoded shortName table
-     * 2. [VaktLiveData.customPids] map keyed by shortName (label/unit from [VehicleProfile])
+     * 1. Named fields in [AutoVaktLiveData] via the hardcoded shortName table
+     * 2. [AutoVaktLiveData.customPids] map keyed by shortName (label/unit from [VehicleProfile])
      * 3. Null assignment or unknown shortName → [EMPTY_SLOT]
      */
     fun resolve(
-        liveData: VaktLiveData,
+        liveData: AutoVaktLiveData,
         assignments: List<String?>,
         profile: VehicleProfile,
         layoutManager: VehicleLayoutManager
@@ -28,7 +28,7 @@ object GaugeSlotResolver {
     }
 
     private fun resolveOne(
-        liveData: VaktLiveData,
+        liveData: AutoVaktLiveData,
         shortName: String,
         profile: VehicleProfile,
         layoutManager: VehicleLayoutManager

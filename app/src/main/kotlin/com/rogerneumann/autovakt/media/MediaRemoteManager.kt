@@ -7,7 +7,7 @@ import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.view.KeyEvent
 import androidx.core.app.NotificationManagerCompat
-import com.rogerneumann.autovakt.data.VaktLiveData
+import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,7 +37,7 @@ class MediaRemoteManager @Inject constructor(
         NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
 
     /**
-     * Called by VaktNotificationListener when metadata changes.
+     * Called by AutoVaktNotificationListener when metadata changes.
      */
     fun updateMetadata(title: String?, artist: String?, packageName: String?) {
         val t = title ?: ""
@@ -50,7 +50,7 @@ class MediaRemoteManager @Inject constructor(
     /**
      * Merges current media state into the main telemetry data.
      */
-    fun injectInto(liveData: VaktLiveData): VaktLiveData {
+    fun injectInto(liveData: AutoVaktLiveData): AutoVaktLiveData {
         val state = _mediaState.value
         return liveData.copy(
             currentSongTitle = state.title.ifBlank { null },
@@ -66,7 +66,7 @@ class MediaRemoteManager @Inject constructor(
     fun dispatchMediaKey(keyCode: Int) {
         // Attempt via active MediaController
         val msm = context.getSystemService(Context.MEDIA_SESSION_SERVICE) as? MediaSessionManager
-        val cn = ComponentName(context, VaktNotificationListener::class.java)
+        val cn = ComponentName(context, AutoVaktNotificationListener::class.java)
         val controller = try {
             msm?.getActiveSessions(cn)?.firstOrNull {
                 it.playbackState?.state == PlaybackState.STATE_PLAYING

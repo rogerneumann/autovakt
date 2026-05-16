@@ -1,7 +1,7 @@
 package com.rogerneumann.autovakt.media
 
 import android.graphics.*
-import com.rogerneumann.autovakt.data.VaktLiveData
+import com.rogerneumann.autovakt.data.AutoVaktLiveData
 
 /**
  * Responsible for generating the Bitmaps used in the Android Auto 1/3 slot.
@@ -16,7 +16,7 @@ class OBD2MetadataMapper {
     /**
      * Generates a Bitmap for the EV Telemetry Focus view.
      */
-    fun generateEvBitmap(data: VaktLiveData): Bitmap {
+    fun generateEvBitmap(data: AutoVaktLiveData): Bitmap {
         val bitmap = Bitmap.createBitmap(gaugeSize, gaugeSize, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.drawColor(backgroundColor)
@@ -51,7 +51,7 @@ class OBD2MetadataMapper {
     /**
      * Generates a Bitmap focusing on Battery Temps and Health.
      */
-    fun generateBatteryBitmap(data: VaktLiveData): Bitmap {
+    fun generateBatteryBitmap(data: AutoVaktLiveData): Bitmap {
         val bitmap = Bitmap.createBitmap(gaugeSize, gaugeSize, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.drawColor(backgroundColor)
@@ -78,7 +78,7 @@ class OBD2MetadataMapper {
     /**
      * Generates a Bitmap for Trip Summary.
      */
-    fun generateTripBitmap(data: VaktLiveData): Bitmap {
+    fun generateTripBitmap(data: AutoVaktLiveData): Bitmap {
         val bitmap = Bitmap.createBitmap(gaugeSize, gaugeSize, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.drawColor(backgroundColor)

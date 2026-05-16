@@ -14,10 +14,10 @@ import android.view.KeyEvent
 import androidx.media.MediaBrowserServiceCompat
 import com.rogerneumann.autovakt.auto.render.GaugeSlotResolver
 import com.rogerneumann.autovakt.data.OBD2Repository
-import com.rogerneumann.autovakt.data.VaktLiveData
+import com.rogerneumann.autovakt.data.AutoAutoVaktLiveData
 import com.rogerneumann.autovakt.data.VehicleLayoutManager
 import com.rogerneumann.autovakt.data.VehicleProfile
-import com.rogerneumann.autovakt.util.VaktDisplayState
+import com.rogerneumann.autovakt.util.AutoVaktDisplayState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * The media service that allows Vakt to appear in the Android Auto
+ * The media service that allows AutoVakt to appear in the Android Auto
  * Coolwalk 1/3 media slot. Renders one of three bitmap layouts:
  *
  *  - HYBRID    : 2×2 telemetry grid (top 55%) + song info (bottom 45%)
@@ -37,11 +37,11 @@ import javax.inject.Inject
  *  - MEDIA     : full-screen centered song title + artist + control icons
  *
  * The Coolwalk skip buttons ALWAYS control media (never cycle views).
- * View mode is driven by [VaktDisplayState.displayMode] which MainActivity
+ * View mode is driven by [AutoVaktDisplayState.displayMode] which MainActivity
  * updates whenever the user swipes the phone.
  */
 @AndroidEntryPoint
-class VaktMediaBrowserService : MediaBrowserServiceCompat() {
+class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
 
     @Inject lateinit var repository: OBD2Repository
     @Inject lateinit var mediaRemoteManager: MediaRemoteManager
@@ -59,7 +59,7 @@ class VaktMediaBrowserService : MediaBrowserServiceCompat() {
     override fun onCreate() {
         super.onCreate()
 
-        mediaSession = MediaSessionCompat(this, "VaktMediaSession").apply {
+        mediaSession = MediaSessionCompat(this, "AutoVaktMediaSession").apply {
             @Suppress("DEPRECATION")
             setFlags(
                 MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
@@ -101,7 +101,7 @@ class VaktMediaBrowserService : MediaBrowserServiceCompat() {
         serviceScope.launch {
             combine(
                 repository.liveData,
-                VaktDisplayState.displayMode,
+                AutoVaktDisplayState.displayMode,
                 mediaRemoteManager.currentMetadata
             ) { data, mode, metadata -> Triple(data, mode, metadata) }
                 .collectLatest { (data, mode, _) ->
@@ -113,7 +113,7 @@ class VaktMediaBrowserService : MediaBrowserServiceCompat() {
     /**
      * Renders the appropriate bitmap and pushes it to the MediaSession.
      */
-    private fun updateBitmap(data: VaktLiveData, displayMode: String) {
+    private fun updateBitmap(data: AutoVaktLiveData, displayMode: String) {
         val bitmap = Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
@@ -157,12 +157,12 @@ class VaktMediaBrowserService : MediaBrowserServiceCompat() {
         isAntiAlias = true
     }
 
-    private fun drawTelemetryFull(canvas: Canvas, data: VaktLiveData) {
+    private fun drawTelemetryFull(canvas: Canvas, data: AutoVaktLiveData) {
         canvas.drawColor(Color.parseColor("#121212"))
         drawTelemetryGrid(canvas, data, 0f, 0f, bitmapW.toFloat(), bitmapH.toFloat())
     }
 
-    private fun drawHybrid(canvas: Canvas, data: VaktLiveData, title: String, artist: String) {
+    private fun drawHybrid(canvas: Canvas, data: AutoVaktLiveData, title: String, artist: String) {
         canvas.drawColor(Color.parseColor("#121212"))
         val splitY = bitmapH * 0.55f
         drawTelemetryGrid(canvas, data, 0f, 0f, bitmapW.toFloat(), splitY)
@@ -178,7 +178,7 @@ class VaktMediaBrowserService : MediaBrowserServiceCompat() {
      * Draws a 2×2 grid of telemetry tiles from the first 4 slot assignments.
      */
     private fun drawTelemetryGrid(
-        canvas: Canvas, data: VaktLiveData,
+        canvas: Canvas, data: AutoVaktLiveData,
         x0: Float, y0: Float, x1: Float, y1: Float
     ) {
         val defaultSlots = listOf("SOC", "PWR", "SPEED", "BATT_T_MAX")
@@ -300,7 +300,7 @@ class VaktMediaBrowserService : MediaBrowserServiceCompat() {
 
     // ── Metadata title helpers ────────────────────────────────────────────────
 
-    private fun buildTelemetryTitle(data: VaktLiveData): String {
+    private fun buildTelemetryTitle(data: AutoVaktLiveData): String {
         val soc = data.soc?.toInt()
         val pwr = data.powerKw?.toInt()
         return buildString {
@@ -313,7 +313,7 @@ class VaktMediaBrowserService : MediaBrowserServiceCompat() {
         }
     }
 
-    private fun buildHybridTitle(data: VaktLiveData, songTitle: String): String {
+    private fun buildHybridTitle(data: AutoVaktLiveData, songTitle: String): String {
         val soc = data.soc?.toInt()
         return when {
             songTitle.isNotBlank() -> songTitle
