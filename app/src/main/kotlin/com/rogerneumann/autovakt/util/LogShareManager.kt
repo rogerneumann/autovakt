@@ -30,7 +30,7 @@ import javax.inject.Singleton
 class LogShareManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val crashFile = File(context.filesDir, "vakt_last_crash.txt")
+    private val crashFile = File(context.filesDir, "autovakt_last_crash.txt")
 
     fun saveCrash(throwable: Throwable) {
         runCatching {

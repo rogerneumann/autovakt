@@ -14,7 +14,7 @@ class TripRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val tripDao: TripDao
 ) {
-    private val prefs = context.getSharedPreferences("vakt_trips", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences("autovakt_trips", Context.MODE_PRIVATE)
 
     var activeTripId: Long? = null
         private set

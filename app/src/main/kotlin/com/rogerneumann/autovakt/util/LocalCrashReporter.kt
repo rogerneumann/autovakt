@@ -37,6 +37,6 @@ class LocalCrashReporter @Inject constructor(
     }
 
     companion object {
-        private const val TAG = "VaktDiag"
+        private const val TAG = "AutoVaktDiag"
     }
 }

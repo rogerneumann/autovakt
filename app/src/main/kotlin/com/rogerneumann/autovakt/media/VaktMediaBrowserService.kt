@@ -48,7 +48,7 @@ class VaktMediaBrowserService : MediaBrowserServiceCompat() {
     @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
 
     private var mediaSession: MediaSessionCompat? = null
-    private val rootId = "vakt_root"
+    private val rootId = "autovakt_root"
 
     // 800×480 landscape canvas — standard AA mini-player size
     private val bitmapW = 800

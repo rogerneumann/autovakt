@@ -34,7 +34,7 @@ class OBD2ForegroundService : Service() {
     @Inject lateinit var transportDelegate: TransportDelegate
     @Inject lateinit var classicTransport: com.rogerneumann.autovakt.obd2.ElmBluetoothTransport
     @Inject lateinit var bleTransport: com.rogerneumann.autovakt.obd2.ElmBleTransport
-    private val channelId = "vakt_obd_service"
+    private val channelId = "autovakt_obd_service"
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

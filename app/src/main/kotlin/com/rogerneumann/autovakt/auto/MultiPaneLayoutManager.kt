@@ -17,7 +17,7 @@ import com.rogerneumann.autovakt.obd2.ConnectionState
  * provides the correct [Template] for each configuration.
  *
  * Modes:
- * - [DisplayMode.FULL_SCREEN] — user opened Vakt directly; full NavigationTemplate canvas.
+ * - [DisplayMode.FULL_SCREEN] — user opened AutoVakt directly; full NavigationTemplate canvas.
  * - [DisplayMode.WIDE] — landscape head unit with extra horizontal space (e.g., 16:9 wide display).
  * - [DisplayMode.NARROW] — portrait or constrained display (smaller head unit).
  *

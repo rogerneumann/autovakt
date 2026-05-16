@@ -37,7 +37,7 @@ class ElmBluetoothTransport @Inject constructor(
 ) : OBD2Transport {
 
     private val SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
-    private val TAG = "VaktBT"
+    private val TAG = "AutoVaktBT"
 
     private var socket: BluetoothSocket? = null
     private var inputStream: InputStream? = null

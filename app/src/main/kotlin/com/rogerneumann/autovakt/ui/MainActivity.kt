@@ -345,7 +345,7 @@ class MainActivity : AppCompatActivity() {
      * Dismissed on any touch.
      */
     private fun showSwipeHintIfNeeded() {
-        val prefs = getSharedPreferences("vakt_prefs", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences("autovakt_prefs", Context.MODE_PRIVATE)
         if (prefs.getBoolean("seen_swipe_hint", false)) return
 
         val root = binding.root as? ViewGroup ?: return

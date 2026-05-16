@@ -11,7 +11,7 @@ class VehicleProfileManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val profileHub: VehicleProfileHub
 ) {
-    private val prefs: SharedPreferences = context.getSharedPreferences("vakt_prefs", Context.MODE_PRIVATE)
+    private val prefs: SharedPreferences = context.getSharedPreferences("autovakt_prefs", Context.MODE_PRIVATE)
 
     fun getActiveProfileId(): String =
         prefs.getString("active_vehicle_id", "chevy_bolt_euv_2023") ?: "chevy_bolt_euv_2023"

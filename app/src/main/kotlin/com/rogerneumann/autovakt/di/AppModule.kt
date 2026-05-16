@@ -47,7 +47,7 @@ object AppModule {
         return Room.databaseBuilder(
             context,
             VaktDatabase::class.java,
-            "vakt_db"
+            "autovakt_db"
         ).fallbackToDestructiveMigration().build()
     }
 
@@ -57,6 +57,6 @@ object AppModule {
     @Provides
     @Singleton
     fun provideSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
-        return context.getSharedPreferences("vakt_prefs", Context.MODE_PRIVATE)
+        return context.getSharedPreferences("autovakt_prefs", Context.MODE_PRIVATE)
     }
 }

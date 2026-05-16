@@ -361,7 +361,7 @@ class OBD2Repository @Inject constructor(
                 connectionState   = ConnectionState.Connected,
                 vehicleProfile    = vehicleProfile,
                 currentSongTitle  = "Demo Mode Active",
-                currentSongArtist = "Vakt UI Test"
+                currentSongArtist = "AutoVakt UI Test"
             )
             delay(2000)
         }
