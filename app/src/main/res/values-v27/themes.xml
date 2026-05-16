@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Vakt" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.AutoVakt" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">#00E676</item>
         <item name="colorOnPrimary">#000000</item>
         <item name="colorSecondary">#B0BEC5</item>

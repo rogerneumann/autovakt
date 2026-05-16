@@ -38,11 +38,11 @@ def buildDate = "${todayStr}.${buildIteration}"              // e.g. "20260516.1
 def buildCode = todayStr.toInteger() * 100 + buildIteration  // e.g. 2026051601 (< 2.1B limit)
 
 android {
-    namespace 'com.rogerneumann.vakt'
+    namespace 'com.rogerneumann.autovakt'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.rogerneumann.vakt"
+        applicationId "com.rogerneumann.autovakt"
         minSdk 26
         targetSdk 34
         versionCode buildCode
@@ -71,7 +71,7 @@ android {
 
     applicationVariants.all { variant ->
         variant.outputs.all {
-            outputFileName = "vakt-${buildDate}-${variant.buildType.name}.apk"
+            outputFileName = "autovakt-${buildDate}-${variant.buildType.name}.apk"
         }
     }
 }
@@ -83,7 +83,7 @@ task publishRelease(dependsOn: 'assembleDebug') {
     group = 'publishing'
     description = 'Assembles the debug APK and creates/updates a GitHub Release.'
     doLast {
-        def apk = "${buildDir}/outputs/apk/debug/vakt-${buildDate}-debug.apk"
+        def apk = "${buildDir}/outputs/apk/debug/autovakt-${buildDate}-debug.apk"
         def tag  = "v${buildDate}"
 
         def releaseExists = exec {
@@ -103,7 +103,7 @@ task publishRelease(dependsOn: 'assembleDebug') {
             exec {
                 workingDir rootDir
                 commandLine 'gh', 'release', 'create', tag,
-                    '--title', "Vakt ${buildDate}",
+                    '--title', "AutoVakt ${buildDate}",
                     '--notes', "Build ${buildDate}",
                     apk
             }

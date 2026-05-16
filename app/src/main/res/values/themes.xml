@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.Vakt" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.AutoVakt" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">#00E676</item>
         <item name="colorOnPrimary">#000000</item>

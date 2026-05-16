@@ -13,7 +13,7 @@
         android:layout_height="match_parent"
         android:background="#000000">
 
-        <com.rogerneumann.vakt.ui.DashboardView
+        <com.rogerneumann.autovakt.ui.DashboardView
             android:id="@+id/dashboardView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />

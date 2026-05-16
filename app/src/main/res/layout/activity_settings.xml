@@ -380,14 +380,14 @@
             android:backgroundTint="#1E1E1E" android:textColor="#00E676"
             android:layout_marginBottom="24dp" />
 
-        <!-- ── Vakt Bridge ────────────────────────────────────────────────── -->
+        <!-- ── AutoVakt Bridge ────────────────────────────────────────────────── -->
         <View android:layout_width="match_parent" android:layout_height="1dp"
             android:background="#2A2A2A" android:layout_marginBottom="24dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Vakt Bridge"
+            android:text="AutoVakt Bridge"
             android:textColor="#B0BEC5"
             android:layout_marginBottom="12dp" />
 
@@ -768,7 +768,7 @@
             android:id="@+id/tvVersion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Vakt v--"
+            android:text="AutoVakt v--"
             android:textColor="#333333"
             android:textSize="12sp"
             android:gravity="center"
