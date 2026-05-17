@@ -239,17 +239,25 @@ class ElmBleTransport @Inject constructor(
             }
         }
 
-        // Fallback profiles
-        for (i in FALLBACK_SERVICE_UUIDS.indices) {
-            val service = gatt.getService(FALLBACK_SERVICE_UUIDS[i])
-            if (service != null) {
-                txCharacteristic = service.getCharacteristic(FALLBACK_TX_UUIDS[i])
-                rxCharacteristic = service.getCharacteristic(FALLBACK_RX_UUIDS[i])
-                if (txCharacteristic != null && rxCharacteristic != null) {
-                    Log.d(TAG, "Using fallback service ${FALLBACK_SERVICE_UUIDS[i]}")
-                    enableNotifications(gatt, rxCharacteristic!!)
-                    return true
-                }
+        // Fallback profiles — detect TX/RX by characteristic properties rather than fixed UUID
+        // order. OBDLink CX (FFF0): FFF1=NOTIFY, FFF2=WRITE_NO_RESPONSE — the opposite of what
+        // many generic clones use, so hardcoding UUID→direction is unreliable across adapters.
+        for (serviceUuid in FALLBACK_SERVICE_UUIDS) {
+            val service = gatt.getService(serviceUuid) ?: continue
+            val chars = service.characteristics
+            val tx = chars.firstOrNull { c ->
+                c.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0 ||
+                c.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE != 0
+            }
+            val rx = chars.firstOrNull { c ->
+                c.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0
+            }
+            if (tx != null && rx != null) {
+                txCharacteristic = tx
+                rxCharacteristic = rx
+                Log.d(TAG, "Using fallback service $serviceUuid  TX=${tx.uuid}  RX=${rx.uuid}")
+                enableNotifications(gatt, rx)
+                return true
             }
         }
 
