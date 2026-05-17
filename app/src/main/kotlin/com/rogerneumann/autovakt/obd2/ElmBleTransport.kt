@@ -285,7 +285,14 @@ class ElmBleTransport @Inject constructor(
                     return@withContext
                 }
 
-                Log.d(TAG, "TX: $command")
+                // Use WRITE_NO_RESPONSE if the characteristic doesn't support acknowledged writes
+                // (OBDLink CX FFF1 and most UART-over-BLE TX chars use WRITE_NO_RESPONSE)
+                val writeType = if (tx.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0) {
+                    BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                } else {
+                    BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                }
+                Log.d(TAG, "TX (writeType=$writeType): $command")
                 val bytes     = (command + "\r").toByteArray()
                 val chunkSize = (currentMtu - 3).coerceAtLeast(1)
 
@@ -293,16 +300,20 @@ class ElmBleTransport @Inject constructor(
                     val chunk = bytes.sliceArray(i until (i + chunkSize).coerceAtMost(bytes.size))
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        gatt?.writeCharacteristic(tx, chunk, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+                        gatt?.writeCharacteristic(tx, chunk, writeType)
                     } else {
                         @Suppress("DEPRECATION")
                         tx.value = chunk
+                        @Suppress("DEPRECATION")
+                        tx.writeType = writeType
                         @Suppress("DEPRECATION")
                         gatt?.writeCharacteristic(tx)
                     }
 
                     if (bytes.size > chunkSize) delay(50)
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e  // let coroutine cancellation propagate; don't tear down GATT
             } catch (e: Exception) {
                 Log.e(TAG, "send() error: ${e.message}")
                 handleGattError("Send failed", e)
@@ -329,6 +340,8 @@ class ElmBleTransport @Inject constructor(
                         delay(10)
                     }
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e  // command timeout from ElmCommandQueue — don't tear down GATT
             } catch (e: Exception) {
                 Log.e(TAG, "readResponse() error: ${e.message}")
                 handleGattError("Read failed", e)
