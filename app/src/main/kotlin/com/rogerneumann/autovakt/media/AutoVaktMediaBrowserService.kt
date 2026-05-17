@@ -14,7 +14,7 @@ import android.view.KeyEvent
 import androidx.media.MediaBrowserServiceCompat
 import com.rogerneumann.autovakt.auto.render.GaugeSlotResolver
 import com.rogerneumann.autovakt.data.OBD2Repository
-import com.rogerneumann.autovakt.data.AutoAutoVaktLiveData
+import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.data.VehicleLayoutManager
 import com.rogerneumann.autovakt.data.VehicleProfile
 import com.rogerneumann.autovakt.util.AutoVaktDisplayState

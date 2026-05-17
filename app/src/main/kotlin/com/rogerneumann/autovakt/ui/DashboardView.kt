@@ -20,7 +20,7 @@ import com.rogerneumann.autovakt.auto.render.GaugeStyle
 import com.rogerneumann.autovakt.auto.render.GaugeTheme
 import com.rogerneumann.autovakt.auto.render.GaugeZone
 import com.rogerneumann.autovakt.data.GaugeLayout
-import com.rogerneumann.autovakt.data.AutoAutoVaktLiveData
+import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.data.VehicleLayoutManager
 import com.rogerneumann.autovakt.data.VehicleProfile
 import com.rogerneumann.autovakt.util.AutoVaktDisplayState
