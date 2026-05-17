@@ -29,13 +29,15 @@ import javax.inject.Singleton
  * Handles BLE GATT communication with ELM327-compatible adapters.
  * Supports NUS (Nordic UART Service) and other standard BLE profiles.
  *
- * Connection sequence:
+ * Connection sequence (strictly serialized — one GATT op at a time):
  *   connectGatt() → onConnectionStateChange(CONNECTED) → discoverServices()
- *   → onServicesDiscovered() → setupCharacteristics() → requestMtu()
+ *   → onServicesDiscovered() → setupCharacteristics() → writeDescriptor(CCCD)
+ *   → onDescriptorWrite() → requestMtu()
  *   → onMtuChanged() → [Connected state set here, setupDeferred completed]
  *
- * connect() blocks on setupDeferred so the caller never sees Connected until
- * TX/RX characteristics are actually ready to use.
+ * If the RX characteristic has no CCCD descriptor, requestMtu() fires directly
+ * from onServicesDiscovered(). connect() blocks on setupDeferred so the caller
+ * never sees Connected until TX/RX characteristics are actually ready to use.
  */
 @SuppressLint("MissingPermission")
 @Singleton
@@ -80,6 +82,10 @@ class ElmBleTransport @Inject constructor(
     private var lastResponseTime  = System.currentTimeMillis()
     private var watchdogJob: kotlinx.coroutines.Job? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    // True while a writeDescriptor(CCCD) is in-flight. requestMtu() must not fire
+    // until onDescriptorWrite() clears this — Android BLE allows only one GATT op at a time.
+    private var descriptorWritePending = false
 
     // Completed by onMtuChanged (or on error) so connect() knows setup is done.
     private var setupDeferred: CompletableDeferred<Unit>? = null
@@ -127,7 +133,26 @@ class ElmBleTransport @Inject constructor(
                 return
             }
 
-            Log.i(TAG, "Characteristics ready — requesting MTU $PREFERRED_MTU")
+            // If enableNotifications() issued a writeDescriptor(), wait for onDescriptorWrite
+            // before requesting MTU — Android BLE allows only one outstanding GATT op at a time.
+            if (!descriptorWritePending) {
+                Log.i(TAG, "No CCCD write needed — requesting MTU $PREFERRED_MTU")
+                gatt.requestMtu(PREFERRED_MTU)
+            }
+            // else: onDescriptorWrite will call requestMtu()
+        }
+
+        override fun onDescriptorWrite(
+            gatt: BluetoothGatt,
+            descriptor: BluetoothGattDescriptor,
+            status: Int
+        ) {
+            descriptorWritePending = false
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                Log.w(TAG, "CCCD write failed (status=$status) — proceeding to MTU anyway")
+            } else {
+                Log.d(TAG, "CCCD written — requesting MTU $PREFERRED_MTU")
+            }
             gatt.requestMtu(PREFERRED_MTU)
         }
 
@@ -269,6 +294,7 @@ class ElmBleTransport @Inject constructor(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val descriptor = characteristic.getDescriptor(CCCD_UUID)
             if (descriptor != null) {
+                descriptorWritePending = true
                 gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
             }
         } else {
@@ -277,6 +303,7 @@ class ElmBleTransport @Inject constructor(
                 if (descriptor.uuid == CCCD_UUID) {
                     @Suppress("DEPRECATION")
                     descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                    descriptorWritePending = true
                     @Suppress("DEPRECATION")
                     gatt.writeDescriptor(descriptor)
                 }
@@ -408,6 +435,7 @@ class ElmBleTransport @Inject constructor(
 
     private fun cleanup() {
         watchdogJob?.cancel()
+        descriptorWritePending = false
         try { gatt?.close() } catch (_: Exception) {}
         finally {
             gatt             = null
