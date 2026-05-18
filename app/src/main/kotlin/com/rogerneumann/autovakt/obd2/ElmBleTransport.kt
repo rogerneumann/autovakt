@@ -320,6 +320,15 @@ class ElmBleTransport @Inject constructor(
                     return@withContext
                 }
 
+                // Drain any stale notifications left over from the previous command.
+                // ELM327 adapters (especially after ATZ reset) occasionally emit a trailing
+                // '\r\n>' that arrives slightly after readResponse() already returned on the
+                // first '>'. Without this drain that byte poisons the next command's buffer,
+                // causing it to return immediately with empty/garbage data.
+                var drained = 0
+                while (rxChannel.tryReceive().isSuccess) { drained++ }
+                if (drained > 0) Log.d(TAG, "Drained $drained stale notification(s) before: $command")
+
                 // Use WRITE_NO_RESPONSE if the characteristic doesn't support acknowledged writes
                 // (OBDLink CX FFF1 and most UART-over-BLE TX chars use WRITE_NO_RESPONSE)
                 val writeType = if (tx.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0) {

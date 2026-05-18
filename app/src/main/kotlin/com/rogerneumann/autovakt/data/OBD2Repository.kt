@@ -101,6 +101,7 @@ class OBD2Repository @Inject constructor(
 
         try {
             queue.execute("ATZ", 5000L)  // reset takes up to ~2s on ELM327; default 2000ms too tight
+            delay(500L)                   // let ELM fully settle before first post-reset command
             queue.execute("ATE0")
 
             val vin = protocolHandler.discoverVin()
