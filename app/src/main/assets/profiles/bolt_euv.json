@@ -7,7 +7,7 @@
   "powertrain": "EV",
   "initCommands": ["ATCAF1", "ATAL", "ATSP6", "ATSH 7E4", "1003"],
   "vinPatterns": ["1G1FZ", "1G1FY"],
-  "defaultSlots": ["SOC", "PWR", "SPEED", "BATT_T_MAX"],
+  "defaultSlots": ["SOC", "PWR", "instantMiPerKwh", "averageMiPerKwh"],
   "pids": [
     {
       "name": "State of Charge",

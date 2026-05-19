@@ -19,6 +19,17 @@ object PidFormulaParser {
         nonLinearMap: List<Pair<Float, Float>> = emptyList()
     ): Float {
         var expr = equation.uppercase().replace(" ", "")
+
+        // Pre-process SIGNED(X) before unsigned letter substitution
+        val signedRegex = Regex("SIGNED\\(([A-Z])\\)")
+        expr = signedRegex.replace(expr) { m ->
+            val idx = m.groupValues[1][0] - 'A'
+            if (idx < bytes.size) {
+                val u = bytes[idx].toInt() and 0xFF
+                (if (u > 127) u - 256 else u).toString()
+            } else "0"
+        }
+
         for (i in bytes.indices) {
             val varName = ('A' + i).toString()
             val value = (bytes[i].toInt() and 0xFF).toString()
