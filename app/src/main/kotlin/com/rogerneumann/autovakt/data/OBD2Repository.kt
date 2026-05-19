@@ -127,13 +127,16 @@ class OBD2Repository @Inject constructor(
             previousVin = vin
             previousPowertrain = vehicleProfile.powertrain
 
+            // Poll for stored DTCs before profile init so the UDS session open
+            // command (1003) is immediately followed by the first BMS query.
+            pollAndSaveDtcs(vin ?: "")
+
             // Run profile-specific ELM init commands
             for (cmd in vehicleProfile.initCommands) {
                 queue.execute(cmd)
             }
-
-            // Poll for stored DTCs once at connection time
-            pollAndSaveDtcs(vin ?: "")
+            // Give the ECU time to settle into the new diagnostic session
+            delay(200L)
 
             _liveData.value = _liveData.value.copy(
                 vehicleProfile = vehicleProfile,
@@ -167,9 +170,28 @@ class OBD2Repository @Inject constructor(
         return profileManager.getActiveProfile()
     }
 
+    // Returns the CAN header that precedes "1003" in initCommands, or null if none.
+    private fun udsKeepaliveHeader(): String? {
+        val cmds = vehicleProfile.initCommands
+        val idx = cmds.indexOf("1003")
+        if (idx <= 0) return null
+        val prev = cmds[idx - 1]
+        return if (prev.startsWith("ATSH ")) prev.removePrefix("ATSH ").trim() else null
+    }
+
     private suspend fun pollCustomPids() {
         val profile = vehicleProfile
         val updatedCustom = _liveData.value.customPids.toMutableMap()
+
+        // Keep UDS extended diagnostic session alive. Without a periodic
+        // TesterPresent the BMS reverts to default session after ~5 s and
+        // returns NRC 0x31 for session-gated DIDs (SOC, voltage, current).
+        udsKeepaliveHeader()?.let { hdr ->
+            try {
+                queue.execute("ATSH $hdr")
+                queue.execute("3E00")   // TesterPresent — ECU replies 7E 00
+            } catch (_: Exception) { /* best-effort; next cycle will retry */ }
+        }
 
         // Track these for derived power calculation
         var hvVoltage: Float? = null
