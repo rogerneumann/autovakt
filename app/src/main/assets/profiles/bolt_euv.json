@@ -67,6 +67,7 @@
       "shortName": "SPEED",
       "modeAndPid": "010D",
       "equation": "A",
+      "header": "7DF",
       "units": "km/h",
       "minValue": 0,
       "maxValue": 200
