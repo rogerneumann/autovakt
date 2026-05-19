@@ -5,7 +5,7 @@
   "year": 2023,
   "region": "US",
   "powertrain": "EV",
-  "initCommands": ["ATCAF1", "ATAL", "ATSP6"],
+  "initCommands": ["ATCAF1", "ATAL", "ATSP6", "ATSH 7E4", "1003"],
   "vinPatterns": ["1G1FZ", "1G1FY"],
   "defaultSlots": ["SOC", "PWR", "SPEED", "BATT_T_MAX"],
   "pids": [
