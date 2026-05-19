@@ -53,16 +53,6 @@
       "maxValue": 100
     },
     {
-      "name": "Battery Temp Min",
-      "shortName": "BATT_T_MIN",
-      "modeAndPid": "224350",
-      "equation": "A-40",
-      "header": "7E4",
-      "units": "°C",
-      "minValue": -40,
-      "maxValue": 100
-    },
-    {
       "name": "Vehicle Speed",
       "shortName": "SPEED",
       "modeAndPid": "010D",
