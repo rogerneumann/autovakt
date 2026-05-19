@@ -1,5 +1,6 @@
 package com.rogerneumann.autovakt.data
 
+import android.util.Log
 import com.rogerneumann.autovakt.media.MediaRemoteManager
 import com.rogerneumann.autovakt.obd2.ConnectionState
 import com.rogerneumann.autovakt.obd2.ElmCommandQueue
@@ -16,6 +17,8 @@ import kotlin.random.Random
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
+
+private const val TAG = "AutoVaktOBD"
 
 @Singleton
 class OBD2Repository @Inject constructor(
@@ -103,6 +106,11 @@ class OBD2Repository @Inject constructor(
             queue.execute("ATZ", 5000L)  // reset takes up to ~2s on ELM327; default 2000ms too tight
             delay(500L)                   // let ELM fully settle before first post-reset command
             queue.execute("ATE0")
+            // These two are required for the response parser on every vehicle — not profile-dependent.
+            // ATCAF1: strip ISO-TP framing so responses start with the service byte.
+            // ATAL: allow long (multi-frame) responses; default is short which truncates compound PIDs.
+            queue.execute("ATCAF1")
+            queue.execute("ATAL")
 
             val vin = protocolHandler.discoverVin()
             if (vin != null) {
@@ -155,7 +163,10 @@ class OBD2Repository @Inject constructor(
                 updateAccumulators()
                 delay(2000)
             }
+        } catch (e: CancellationException) {
+            throw e  // structured concurrency: let intentional stop() cancel cleanly, not as Error
         } catch (e: Exception) {
+            Log.e(TAG, "runLiveLoop error: ${e.message}", e)
             _liveData.value = _liveData.value.copy(
                 connectionState = ConnectionState.Error(e.message ?: "Unknown error")
             )
@@ -189,8 +200,17 @@ class OBD2Repository @Inject constructor(
         udsKeepaliveHeader()?.let { hdr ->
             try {
                 queue.execute("ATSH $hdr")
-                queue.execute("3E00")   // TesterPresent — ECU replies 7E 00
-            } catch (_: Exception) { /* best-effort; next cycle will retry */ }
+                queue.execute("3E00", 500L)  // TesterPresent — ECU replies 7E 00; short timeout
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Session likely expired — re-open extended diagnostic session before polling
+                try {
+                    queue.execute("ATSH $hdr")
+                    queue.execute("1003")
+                    delay(100L)
+                } catch (e: CancellationException) { throw e } catch (_: Exception) { }
+            }
         }
 
         // Track these for derived power calculation
@@ -210,7 +230,10 @@ class OBD2Repository @Inject constructor(
                     queue.execute("ATSH ${pid.header}")
                 }
                 val response = queue.execute(pid.modeAndPid)
-                val bytes = extractRawBytes(response, pid.modeAndPid) ?: continue
+                val bytes = extractRawBytes(response, pid.modeAndPid) ?: run {
+                    Log.d(TAG, "PID ${pid.shortName}: parse failed — raw='${response.trim().take(60)}'")
+                    continue
+                }
                 val value = PidFormulaParser.evaluate(pid.equation, bytes, pid.nonLinearMap)
                 updatedCustom[pid.shortName] = value
 
@@ -222,7 +245,11 @@ class OBD2Repository @Inject constructor(
                     "HV_V" -> hvVoltage = value
                     "HV_I" -> hvCurrent = value
                 }
-            } catch (_: Exception) { /* skip failed PID */ }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.d(TAG, "PID ${pid.shortName}: exception — ${e.message}")
+            }
         }
 
         // Map standard shortNames to core LiveData fields
@@ -292,7 +319,18 @@ class OBD2Repository @Inject constructor(
     }
 
     private fun extractRawBytes(response: String, command: String): ByteArray? {
-        val clean = response.replace(" ", "").trim().uppercase()
+        // Reassemble multi-frame responses: ATCAF1 prefixes each continuation frame with
+        // a single-hex-digit line number ("0: ...", "1: ..."). Strip those before parsing.
+        val clean = response.lines()
+            .filter { it.isNotBlank() && it.trim() != ">" }
+            .joinToString("") { line ->
+                val t = line.trim()
+                if (t.length > 1 && t[1] == ':') t.substring(2).trim() else t
+            }
+            .replace(" ", "")
+            .trim()
+            .uppercase()
+
         val cmdClean = command.replace(" ", "").trim().uppercase()
 
         val mode = cmdClean.substring(0, 2)

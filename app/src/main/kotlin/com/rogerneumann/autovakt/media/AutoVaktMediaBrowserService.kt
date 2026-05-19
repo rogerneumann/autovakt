@@ -182,7 +182,7 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
         x0: Float, y0: Float, x1: Float, y1: Float
     ) {
         val defaultSlots = listOf("SOC", "PWR", "SPEED", "BATT_T_MAX")
-        val slots = GaugeSlotResolver.resolve(data, defaultSlots, VehicleProfile.DEFAULT, vehicleLayoutManager)
+        val slots = GaugeSlotResolver.resolve(data, defaultSlots, data.vehicleProfile ?: VehicleProfile.DEFAULT, vehicleLayoutManager)
 
         val pad = 8f
         val cellW = (x1 - x0 - pad * 3f) / 2f
