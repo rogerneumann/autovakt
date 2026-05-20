@@ -1,0 +1,73 @@
+{
+  "id": "toyota_prius_prime",
+  "make": "Toyota",
+  "model": "Prius Prime",
+  "year": 2017,
+  "region": "US",
+  "powertrain": "PHEV",
+  "initCommands": ["ATSP6", "ATFCSH 7C8", "ATFCSD 300000", "ATFCSM 1", "ATSH 7C0"],
+  "vinPatterns": ["JTDKARFP", "JTDKBRFU"],
+  "defaultSlots": ["SOC", "SPEED", "HV_V", "BATT_T_MAX"],
+  "pids": [
+    {
+      "name": "HV Battery SOC",
+      "shortName": "SOC",
+      "modeAndPid": "221D6E",
+      "equation": "A/2",
+      "header": "7C0",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "HV Battery Voltage",
+      "shortName": "HV_V",
+      "modeAndPid": "221D0C",
+      "equation": "(A*256+B)*0.1",
+      "header": "7C0",
+      "units": "V",
+      "minValue": 0,
+      "maxValue": 350
+    },
+    {
+      "name": "HV Battery Current",
+      "shortName": "HV_I",
+      "modeAndPid": "221D0C",
+      "equation": "(SIGNED(C)*256+D)*0.1",
+      "header": "7C0",
+      "units": "A",
+      "minValue": -200,
+      "maxValue": 200
+    },
+    {
+      "name": "Battery Temp Max",
+      "shortName": "BATT_T_MAX",
+      "modeAndPid": "221D04",
+      "equation": "A-40",
+      "header": "7C0",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 80
+    },
+    {
+      "name": "Engine Coolant Temp",
+      "shortName": "COOLANT",
+      "modeAndPid": "0105",
+      "equation": "A-40",
+      "header": "7DF",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 215
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    }
+  ]
+}

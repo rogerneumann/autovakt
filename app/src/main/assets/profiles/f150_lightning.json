@@ -1,0 +1,63 @@
+{
+  "id": "ford_f150_lightning",
+  "make": "Ford",
+  "model": "F-150 Lightning",
+  "year": 2022,
+  "region": "US",
+  "powertrain": "EV",
+  "initCommands": ["ATSP6", "ATFCSH 72E", "ATFCSD 300000", "ATFCSM 1", "ATSH 726"],
+  "vinPatterns": ["1FTVW"],
+  "defaultSlots": ["SOC", "SPEED", "HV_V", "BATT_T_MAX"],
+  "pids": [
+    {
+      "name": "State of Charge",
+      "shortName": "SOC",
+      "modeAndPid": "2201A3",
+      "equation": "B*100/255",
+      "header": "726",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "HV Battery Voltage",
+      "shortName": "HV_V",
+      "modeAndPid": "2201A7",
+      "equation": "(A*256+B)*0.01",
+      "header": "726",
+      "units": "V",
+      "minValue": 0,
+      "maxValue": 600
+    },
+    {
+      "name": "HV Battery Current",
+      "shortName": "HV_I",
+      "modeAndPid": "2201A7",
+      "equation": "(SIGNED(C)*256+D)*0.1",
+      "header": "726",
+      "units": "A",
+      "minValue": -1000,
+      "maxValue": 1000
+    },
+    {
+      "name": "Battery Temp Max",
+      "shortName": "BATT_T_MAX",
+      "modeAndPid": "2201A4",
+      "equation": "A-40",
+      "header": "726",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 80
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    }
+  ]
+}

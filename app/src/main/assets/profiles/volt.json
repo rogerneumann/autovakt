@@ -1,0 +1,63 @@
+{
+  "id": "chevy_volt",
+  "make": "Chevrolet",
+  "model": "Volt",
+  "year": 2016,
+  "region": "US",
+  "powertrain": "PHEV",
+  "initCommands": ["ATSP6", "ATFCSH 7EC", "ATFCSD 300000", "ATFCSM 1", "ATSH 7E4", "1003"],
+  "vinPatterns": ["1G1RA", "1G1RB"],
+  "defaultSlots": ["SOC", "SPEED", "HV_V", "BATT_T_MAX"],
+  "pids": [
+    {
+      "name": "HV Battery SOC",
+      "shortName": "SOC",
+      "modeAndPid": "2202BC",
+      "equation": "A*100/255",
+      "header": "7E4",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "HV Battery Voltage",
+      "shortName": "HV_V",
+      "modeAndPid": "2202BD",
+      "equation": "(A*256+B)*0.5",
+      "header": "7E4",
+      "units": "V",
+      "minValue": 0,
+      "maxValue": 450
+    },
+    {
+      "name": "Battery Temp Max",
+      "shortName": "BATT_T_MAX",
+      "modeAndPid": "22434F",
+      "equation": "A-40",
+      "header": "7E4",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 100
+    },
+    {
+      "name": "Engine RPM",
+      "shortName": "RPM",
+      "modeAndPid": "010C",
+      "equation": "(A*256+B)/4",
+      "header": "7DF",
+      "units": "rpm",
+      "minValue": 0,
+      "maxValue": 6000
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    }
+  ]
+}
