@@ -230,7 +230,8 @@ class OBD2Repository @Inject constructor(
                     queue.execute("ATSH ${pid.header}")
                 }
                 val response = queue.execute(pid.modeAndPid)
-                val bytes = extractRawBytes(response, pid.modeAndPid) ?: run {
+                val bytes = extractRawBytes(response, pid.modeAndPid)
+                if (bytes == null) {
                     Log.d(TAG, "PID ${pid.shortName}: parse failed — raw='${response.trim().take(60)}'")
                     continue
                 }
