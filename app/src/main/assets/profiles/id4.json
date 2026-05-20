@@ -1,0 +1,53 @@
+{
+  "id": "vw_id4",
+  "make": "Volkswagen",
+  "model": "ID.4",
+  "year": 2021,
+  "region": "US",
+  "powertrain": "EV",
+  "initCommands": ["ATSP6", "ATFCSH 7EF", "ATFCSD 300000", "ATFCSM 1", "ATSH 7E7"],
+  "vinPatterns": ["WVG", "1V2"],
+  "defaultSlots": ["SOC", "SPEED", "HV_V", "BATT_T_MAX"],
+  "pids": [
+    {
+      "name": "State of Charge",
+      "shortName": "SOC",
+      "modeAndPid": "221E3B",
+      "equation": "A*0.5",
+      "header": "7E7",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "HV Battery Voltage",
+      "shortName": "HV_V",
+      "modeAndPid": "221E3C",
+      "equation": "(A*256+B)*0.1",
+      "header": "7E7",
+      "units": "V",
+      "minValue": 0,
+      "maxValue": 500
+    },
+    {
+      "name": "Battery Temp Max",
+      "shortName": "BATT_T_MAX",
+      "modeAndPid": "220228",
+      "equation": "A-40",
+      "header": "7E7",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 80
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    }
+  ]
+}
