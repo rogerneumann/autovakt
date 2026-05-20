@@ -1,0 +1,83 @@
+{
+  "id": "ford_f150_ice",
+  "make": "Ford",
+  "model": "F-150",
+  "year": 2018,
+  "region": "US",
+  "powertrain": "ICE_GAS",
+  "initCommands": ["ATSP6", "ATFCSH 7E8", "ATFCSD 300000", "ATFCSM 1"],
+  "vinPatterns": ["1FTEW", "1FTFX", "1FTFW"],
+  "defaultSlots": ["RPM", "SPEED", "BOOST_PSI", "COOLANT"],
+  "pids": [
+    {
+      "name": "Engine RPM",
+      "shortName": "RPM",
+      "modeAndPid": "010C",
+      "equation": "(A*256+B)/4",
+      "header": "7DF",
+      "units": "rpm",
+      "minValue": 0,
+      "maxValue": 7000
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    },
+    {
+      "name": "Engine Load",
+      "shortName": "LOAD",
+      "modeAndPid": "0104",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Engine Coolant Temp",
+      "shortName": "COOLANT",
+      "modeAndPid": "0105",
+      "equation": "A-40",
+      "header": "7DF",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 215
+    },
+    {
+      "name": "Boost Pressure",
+      "shortName": "BOOST_PSI",
+      "modeAndPid": "010B",
+      "equation": "A*0.14504 - 14.696",
+      "header": "7DF",
+      "units": "PSI",
+      "minValue": -15,
+      "maxValue": 25
+    },
+    {
+      "name": "Throttle Position",
+      "shortName": "THROTTLE",
+      "modeAndPid": "0111",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Fuel Level",
+      "shortName": "FUEL",
+      "modeAndPid": "012F",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    }
+  ]
+}

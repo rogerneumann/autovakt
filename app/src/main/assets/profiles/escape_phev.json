@@ -1,0 +1,73 @@
+{
+  "id": "ford_escape_phev",
+  "make": "Ford",
+  "model": "Escape PHEV",
+  "year": 2020,
+  "region": "US",
+  "powertrain": "PHEV",
+  "initCommands": ["ATSP6", "ATFCSH 72E", "ATFCSD 300000", "ATFCSM 1", "ATSH 726"],
+  "vinPatterns": ["1FMCU"],
+  "defaultSlots": ["SOC", "SPEED", "HV_V", "COOLANT"],
+  "pids": [
+    {
+      "name": "HV Battery SOC",
+      "shortName": "SOC",
+      "modeAndPid": "2201A3",
+      "equation": "B*100/255",
+      "header": "726",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "HV Battery Voltage",
+      "shortName": "HV_V",
+      "modeAndPid": "2201A7",
+      "equation": "(A*256+B)*0.01",
+      "header": "726",
+      "units": "V",
+      "minValue": 0,
+      "maxValue": 400
+    },
+    {
+      "name": "Battery Temp Max",
+      "shortName": "BATT_T_MAX",
+      "modeAndPid": "2201A4",
+      "equation": "A-40",
+      "header": "726",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 80
+    },
+    {
+      "name": "Engine Coolant Temp",
+      "shortName": "COOLANT",
+      "modeAndPid": "0105",
+      "equation": "A-40",
+      "header": "7DF",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 215
+    },
+    {
+      "name": "Engine RPM",
+      "shortName": "RPM",
+      "modeAndPid": "010C",
+      "equation": "(A*256+B)/4",
+      "header": "7DF",
+      "units": "rpm",
+      "minValue": 0,
+      "maxValue": 6000
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    }
+  ]
+}
