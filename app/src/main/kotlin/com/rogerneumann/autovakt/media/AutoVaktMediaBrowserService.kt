@@ -12,7 +12,10 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent
 import androidx.media.MediaBrowserServiceCompat
+import com.rogerneumann.autovakt.auto.render.BitmapMediaRenderer
 import com.rogerneumann.autovakt.auto.render.GaugeSlotResolver
+import com.rogerneumann.autovakt.auto.render.GaugeTheme
+import com.rogerneumann.autovakt.data.LightingManager
 import com.rogerneumann.autovakt.data.OBD2Repository
 import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.data.VehicleLayoutManager
@@ -46,6 +49,7 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
     @Inject lateinit var repository: OBD2Repository
     @Inject lateinit var mediaRemoteManager: MediaRemoteManager
     @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
+    @Inject lateinit var lightingManager: LightingManager
 
     private var mediaSession: MediaSessionCompat? = null
     private val rootId = "autovakt_root"
@@ -53,6 +57,8 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
     // 800×480 landscape canvas — standard AA mini-player size
     private val bitmapW = 800
     private val bitmapH = 480
+
+    private var currentTheme: GaugeTheme = GaugeTheme.DARK
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -97,14 +103,23 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
 
         sessionToken = mediaSession?.sessionToken
 
-        // Observe both liveData and display mode; re-render on any change
+        // Observe liveData, display mode, media metadata, and theme; re-render on any change
         serviceScope.launch {
             combine(
                 repository.liveData,
                 AutoVaktDisplayState.displayMode,
-                mediaRemoteManager.currentMetadata
-            ) { data, mode, metadata -> Triple(data, mode, metadata) }
-                .collectLatest { (data, mode, _) ->
+                mediaRemoteManager.currentMetadata,
+                lightingManager.themeForAA
+            ) { values ->
+                @Suppress("UNCHECKED_CAST")
+                Triple(
+                    values[0] as AutoVaktLiveData,
+                    values[1] as String,
+                    values[3] as GaugeTheme
+                )
+            }
+                .collectLatest { (data, mode, theme) ->
+                    currentTheme = theme
                     updateBitmap(data, mode)
                 }
         }
@@ -112,19 +127,41 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
 
     /**
      * Renders the appropriate bitmap and pushes it to the MediaSession.
+     *
+     * TELEMETRY and HYBRID modes are rendered via [BitmapMediaRenderer] which
+     * uses [GaugeRenderer] + [GaugeSlotResolver] for the gauge grid and draws
+     * the music strip when [AutoVaktLiveData.currentSongTitle] is set.
+     * MEDIA mode keeps the existing full-screen media card path.
      */
     private fun updateBitmap(data: AutoVaktLiveData, displayMode: String) {
-        val bitmap = Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-
         val metadata = mediaRemoteManager.currentMetadata.value
         val songTitle = metadata.first
         val songArtist = metadata.second
 
-        when (displayMode) {
-            "TELEMETRY" -> drawTelemetryFull(canvas, data)
-            "MEDIA" -> drawMediaFull(canvas, songTitle, songArtist)
-            else -> drawHybrid(canvas, data, songTitle, songArtist) // "HYBRID" default
+        val bitmap: Bitmap = when (displayMode) {
+            "MEDIA" -> {
+                // Full-screen media card — rendered inline (controls not provided by AA strip here)
+                val bmp = Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888)
+                drawMediaFull(Canvas(bmp), songTitle, songArtist)
+                bmp
+            }
+            else -> {
+                // HYBRID (default) and TELEMETRY: delegate to BitmapMediaRenderer.
+                // BitmapMediaRenderer splits gauge/music based on whether music is playing:
+                //   - HYBRID  → data already has currentSongTitle injected by OBD2Repository
+                //   - TELEMETRY → render data as-is; if music is playing strip is still shown,
+                //     matching the intent of "telemetry + optional music info"
+                val assignments = vehicleLayoutManager.getSlotAssignments("gauge_layout_global")
+                BitmapMediaRenderer.render(
+                    data               = data,
+                    theme              = currentTheme,
+                    assignments        = assignments,
+                    profile            = data.vehicleProfile,
+                    vehicleLayoutManager = vehicleLayoutManager,
+                    width              = bitmapW,
+                    height             = bitmapH
+                )
+            }
         }
 
         val titleText = when {
