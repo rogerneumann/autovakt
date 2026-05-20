@@ -141,7 +141,8 @@ class OBD2Repository @Inject constructor(
 
             // Run profile-specific ELM init commands
             for (cmd in vehicleProfile.initCommands) {
-                queue.execute(cmd)
+                val initResp = queue.execute(cmd)
+                Log.d(TAG, "initCmd '$cmd' → '${initResp.trim().take(40)}'")
             }
             // Give the ECU time to settle into the new diagnostic session
             delay(200L)
@@ -194,23 +195,15 @@ class OBD2Repository @Inject constructor(
         val profile = vehicleProfile
         val updatedCustom = _liveData.value.customPids.toMutableMap()
 
-        // Keep UDS extended diagnostic session alive. Without a periodic
-        // TesterPresent the BMS reverts to default session after ~5 s and
-        // returns NRC 0x31 for session-gated DIDs (SOC, voltage, current).
+        // Re-open UDS extended diagnostic session every poll cycle.
+        // The Bolt EUV BMS returns NRC 0x12 (subFunctionNotSupported) for 3E00 —
+        // this ECU does not support TesterPresent. Re-sending 1003 is safe and cheap.
         udsKeepaliveHeader()?.let { hdr ->
             try {
                 queue.execute("ATSH $hdr")
-                queue.execute("3E00", 500L)  // TesterPresent — ECU replies 7E 00; short timeout
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                // Session likely expired — re-open extended diagnostic session before polling
-                try {
-                    queue.execute("ATSH $hdr")
-                    queue.execute("1003")
-                    delay(100L)
-                } catch (e: CancellationException) { throw e } catch (_: Exception) { }
-            }
+                val reopenResp = queue.execute("1003")
+                Log.d(TAG, "UDS session reopen → '${reopenResp.trim().take(40)}'")
+            } catch (e: CancellationException) { throw e } catch (_: Exception) { }
         }
 
         // Track these for derived power calculation
