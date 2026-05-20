@@ -122,6 +122,10 @@ class MainActivity : AppCompatActivity() {
             startHamburgerPulse()
         }
         promptPendingCrashReportIfNeeded()
+        val layoutKey = viewModel.currentLayoutKey.value
+        binding.dashboardView.gaugeLayout = vehicleLayoutManager.getLayout(layoutKey, this, isAA = false)
+        binding.dashboardView.slotAssignments = vehicleLayoutManager.getSlotAssignments(layoutKey)
+        binding.dashboardView.invalidate()
     }
 
     private fun promptPendingCrashReportIfNeeded() {
@@ -253,6 +257,13 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             lightingManager.theme.collectLatest { theme ->
                 binding.dashboardView.theme = theme
+            }
+        }
+        lifecycleScope.launch {
+            viewModel.currentLayoutKey.collectLatest { key ->
+                binding.dashboardView.gaugeLayout = vehicleLayoutManager.getLayout(key, this@MainActivity, isAA = false)
+                binding.dashboardView.slotAssignments = vehicleLayoutManager.getSlotAssignments(key)
+                binding.dashboardView.invalidate()
             }
         }
     }

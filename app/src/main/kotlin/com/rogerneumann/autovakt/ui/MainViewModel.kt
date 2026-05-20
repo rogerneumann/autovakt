@@ -20,6 +20,7 @@ class MainViewModel @Inject constructor(
 ) : ViewModel() {
 
     val liveData = repository.liveData
+    val currentLayoutKey: StateFlow<String> = repository.currentLayoutKey
 
     private var _isDemoMode = false
     val isDemoMode: Boolean get() = _isDemoMode
