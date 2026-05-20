@@ -1,0 +1,93 @@
+{
+  "id": "bmw_3_series",
+  "make": "BMW",
+  "model": "3 Series",
+  "year": 2019,
+  "region": "US",
+  "powertrain": "ICE_GAS",
+  "initCommands": ["ATSP6", "ATFCSH 6F9", "ATFCSD 300000", "ATFCSM 1", "ATSH 6F1"],
+  "vinPatterns": ["WBA", "3MW"],
+  "defaultSlots": ["RPM", "SPEED", "BOOST_PSI", "COOLANT"],
+  "pids": [
+    {
+      "name": "Engine RPM",
+      "shortName": "RPM",
+      "modeAndPid": "010C",
+      "equation": "(A*256+B)/4",
+      "header": "7DF",
+      "units": "rpm",
+      "minValue": 0,
+      "maxValue": 7000
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 280
+    },
+    {
+      "name": "Engine Load",
+      "shortName": "LOAD",
+      "modeAndPid": "0104",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Engine Coolant Temp",
+      "shortName": "COOLANT",
+      "modeAndPid": "0105",
+      "equation": "A-40",
+      "header": "7DF",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 215
+    },
+    {
+      "name": "Boost Pressure",
+      "shortName": "BOOST_PSI",
+      "modeAndPid": "010B",
+      "equation": "A*0.14504 - 14.696",
+      "header": "7DF",
+      "units": "PSI",
+      "minValue": -15,
+      "maxValue": 25
+    },
+    {
+      "name": "Oil Temp",
+      "shortName": "OIL_T",
+      "modeAndPid": "225C",
+      "equation": "A-40",
+      "header": "6F1",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 200
+    },
+    {
+      "name": "Throttle Position",
+      "shortName": "THROTTLE",
+      "modeAndPid": "0111",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Fuel Level",
+      "shortName": "FUEL",
+      "modeAndPid": "012F",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    }
+  ]
+}

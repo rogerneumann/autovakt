@@ -1,0 +1,83 @@
+{
+  "id": "honda_cr_v",
+  "make": "Honda",
+  "model": "CR-V",
+  "year": 2017,
+  "region": "US",
+  "powertrain": "ICE_GAS",
+  "initCommands": ["ATSP0"],
+  "vinPatterns": ["2HKRW", "5J6RW", "7FARW"],
+  "defaultSlots": ["RPM", "SPEED", "COOLANT", "LOAD"],
+  "pids": [
+    {
+      "name": "Engine RPM",
+      "shortName": "RPM",
+      "modeAndPid": "010C",
+      "equation": "(A*256+B)/4",
+      "header": "7DF",
+      "units": "rpm",
+      "minValue": 0,
+      "maxValue": 7000
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    },
+    {
+      "name": "Engine Load",
+      "shortName": "LOAD",
+      "modeAndPid": "0104",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Engine Coolant Temp",
+      "shortName": "COOLANT",
+      "modeAndPid": "0105",
+      "equation": "A-40",
+      "header": "7DF",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 215
+    },
+    {
+      "name": "Throttle Position",
+      "shortName": "THROTTLE",
+      "modeAndPid": "0111",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Boost Pressure",
+      "shortName": "BOOST_PSI",
+      "modeAndPid": "010B",
+      "equation": "A*0.14504 - 14.696",
+      "header": "7DF",
+      "units": "PSI",
+      "minValue": -15,
+      "maxValue": 20
+    },
+    {
+      "name": "Fuel Level",
+      "shortName": "FUEL",
+      "modeAndPid": "012F",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    }
+  ]
+}
