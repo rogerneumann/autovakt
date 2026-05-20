@@ -76,7 +76,7 @@
       "name": "Boost Pressure",
       "shortName": "BOOST_PSI",
       "modeAndPid": "010B",
-      "equation": "A*0.14504",
+      "equation": "A*0.14504 - 14.696",
       "units": "PSI",
       "minValue": -15,
       "maxValue": 30

@@ -5,42 +5,29 @@
   "year": 2023,
   "region": "US",
   "powertrain": "EV",
-  "initCommands": ["ATSP6", "ATSH 7E4", "1003"],
+  "initCommands": ["ATSP6", "ATFCSH 7EC", "ATFCSD 300000", "ATFCSM 1"],
   "vinPatterns": ["1G1FZ", "1G1FY"],
-  "defaultSlots": ["SOC", "PWR", "instantMiPerKwh", "averageMiPerKwh"],
+  "defaultSlots": ["SOC", "SPEED", "BATT_T_MAX", "averageMiPerKwh"],
   "pids": [
     {
       "name": "State of Charge",
       "shortName": "SOC",
-      "modeAndPid": "2202BC",
-      "equation": "(A*256+B)/512",
+      "modeAndPid": "228334",
+      "equation": "A*100/255",
       "header": "7E4",
       "units": "%",
       "minValue": 0,
-      "maxValue": 100,
-      "nonLinearMap": [
-        [9, 0], [18, 10], [27, 20], [44, 40], [61, 60], [79, 80], [96.5, 100]
-      ]
+      "maxValue": 100
     },
     {
       "name": "HV Battery Voltage",
       "shortName": "HV_V",
-      "modeAndPid": "2202BD",
+      "modeAndPid": "22432D",
       "equation": "(A*256+B)*0.0625",
       "header": "7E4",
       "units": "V",
       "minValue": 0,
       "maxValue": 450
-    },
-    {
-      "name": "HV Battery Current",
-      "shortName": "HV_I",
-      "modeAndPid": "2202BE",
-      "equation": "(A*256+B-32768)*0.0625",
-      "header": "7E4",
-      "units": "A",
-      "minValue": -500,
-      "maxValue": 500
     },
     {
       "name": "Battery Temp Max",

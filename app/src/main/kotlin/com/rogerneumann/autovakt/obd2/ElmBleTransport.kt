@@ -286,6 +286,28 @@ class ElmBleTransport @Inject constructor(
             }
         }
 
+        // Universal fallback: scan every service on the device and pick any pair where
+        // one characteristic can write and another can notify. Handles any adapter whose
+        // service UUID is not in our known list (Vgate iCar, OBDLink MX+, cheap clones, etc.).
+        for (service in gatt.services) {
+            if (service.uuid == NUS_SERVICE_UUID) continue // already tried above
+            val chars = service.characteristics
+            val tx = chars.firstOrNull { c ->
+                c.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0 ||
+                c.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE != 0
+            }
+            val rx = chars.firstOrNull { c ->
+                c.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0
+            }
+            if (tx != null && rx != null) {
+                txCharacteristic = tx
+                rxCharacteristic = rx
+                Log.d(TAG, "Universal fallback: service=${service.uuid}  TX=${tx.uuid}  RX=${rx.uuid}")
+                enableNotifications(gatt, rx)
+                return true
+            }
+        }
+
         return false
     }
 

@@ -106,9 +106,12 @@ class OBD2Repository @Inject constructor(
             queue.execute("ATZ", 5000L)  // reset takes up to ~2s on ELM327; default 2000ms too tight
             delay(500L)                   // let ELM fully settle before first post-reset command
             queue.execute("ATE0")
-            // These two are required for the response parser on every vehicle — not profile-dependent.
-            // ATCAF1: strip ISO-TP framing so responses start with the service byte.
-            // ATAL: allow long (multi-frame) responses; default is short which truncates compound PIDs.
+            queue.execute("ATH0")   // headers off — responses begin with service byte, not CAN header
+            queue.execute("ATL0")   // linefeeds off — cleaner response framing across all adapters
+            queue.execute("ATS0")   // spaces off — our parser handles both; this is faster and standard
+            // ATCAF1: required — strips ISO-TP framing so responses start with the service byte.
+            // ATAL: required — allow long (multi-frame) responses; default truncates compound PIDs.
+            // These two run on every connect, regardless of profile.
             queue.execute("ATCAF1")
             queue.execute("ATAL")
 
@@ -135,8 +138,9 @@ class OBD2Repository @Inject constructor(
             previousVin = vin
             previousPowertrain = vehicleProfile.powertrain
 
-            // Poll for stored DTCs before profile init so the UDS session open
-            // command (1003) is immediately followed by the first BMS query.
+            // Poll for stored DTCs before profile init commands run.
+            // If a profile opens a UDS extended session (1003), DTCs must be polled
+            // before that so nothing runs between session open and the first gated DID.
             pollAndSaveDtcs(vin ?: "")
 
             // Run profile-specific ELM init commands
