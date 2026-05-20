@@ -1,0 +1,103 @@
+{
+  "id": "chevy_silverado_duramax",
+  "make": "Chevrolet",
+  "model": "Silverado Duramax",
+  "year": 2020,
+  "region": "US",
+  "powertrain": "ICE_DIESEL",
+  "initCommands": ["ATSP6", "ATFCSH 7E9", "ATFCSD 300000", "ATFCSM 1", "ATSH 7E1"],
+  "vinPatterns": ["1GC4Y", "1GC1Y", "3GC4Y"],
+  "defaultSlots": ["RPM", "SPEED", "BOOST_PSI", "EGT"],
+  "pids": [
+    {
+      "name": "Engine RPM",
+      "shortName": "RPM",
+      "modeAndPid": "010C",
+      "equation": "(A*256+B)/4",
+      "header": "7DF",
+      "units": "rpm",
+      "minValue": 0,
+      "maxValue": 4500
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    },
+    {
+      "name": "Engine Load",
+      "shortName": "LOAD",
+      "modeAndPid": "0104",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Engine Coolant Temp",
+      "shortName": "COOLANT",
+      "modeAndPid": "0105",
+      "equation": "A-40",
+      "header": "7DF",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 215
+    },
+    {
+      "name": "Boost Pressure",
+      "shortName": "BOOST_PSI",
+      "modeAndPid": "010B",
+      "equation": "A*0.14504 - 14.696",
+      "header": "7DF",
+      "units": "PSI",
+      "minValue": -15,
+      "maxValue": 40
+    },
+    {
+      "name": "Exhaust Gas Temp",
+      "shortName": "EGT",
+      "modeAndPid": "222901",
+      "equation": "(A*256+B)*0.1 - 40",
+      "header": "7E1",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 900
+    },
+    {
+      "name": "DPF Soot Load",
+      "shortName": "DPF_SOOT",
+      "modeAndPid": "224001",
+      "equation": "A*100/255",
+      "header": "7E1",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Fuel Level",
+      "shortName": "FUEL",
+      "modeAndPid": "012F",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Transmission Temp",
+      "shortName": "TRANS_T",
+      "modeAndPid": "221940",
+      "equation": "A-40",
+      "header": "7E1",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 200
+    }
+  ]
+}

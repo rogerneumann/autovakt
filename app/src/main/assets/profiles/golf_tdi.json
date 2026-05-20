@@ -1,0 +1,83 @@
+{
+  "id": "vw_golf_tdi",
+  "make": "Volkswagen",
+  "model": "Golf TDI",
+  "year": 2015,
+  "region": "US",
+  "powertrain": "ICE_DIESEL",
+  "initCommands": ["ATSP6", "ATFCSH 7E9", "ATFCSD 300000", "ATFCSM 1", "ATSH 7E1"],
+  "vinPatterns": ["WVWKP", "WVWKR", "3VWFE"],
+  "defaultSlots": ["RPM", "SPEED", "BOOST_PSI", "COOLANT"],
+  "pids": [
+    {
+      "name": "Engine RPM",
+      "shortName": "RPM",
+      "modeAndPid": "010C",
+      "equation": "(A*256+B)/4",
+      "header": "7DF",
+      "units": "rpm",
+      "minValue": 0,
+      "maxValue": 5500
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 240
+    },
+    {
+      "name": "Engine Load",
+      "shortName": "LOAD",
+      "modeAndPid": "0104",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Engine Coolant Temp",
+      "shortName": "COOLANT",
+      "modeAndPid": "0105",
+      "equation": "A-40",
+      "header": "7DF",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 215
+    },
+    {
+      "name": "Boost Pressure",
+      "shortName": "BOOST_PSI",
+      "modeAndPid": "010B",
+      "equation": "A*0.14504 - 14.696",
+      "header": "7DF",
+      "units": "PSI",
+      "minValue": -15,
+      "maxValue": 30
+    },
+    {
+      "name": "DPF Soot Load",
+      "shortName": "DPF_SOOT",
+      "modeAndPid": "222003",
+      "equation": "A*100/255",
+      "header": "7E1",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Fuel Level",
+      "shortName": "FUEL",
+      "modeAndPid": "012F",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    }
+  ]
+}
