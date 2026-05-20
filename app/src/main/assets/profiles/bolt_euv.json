@@ -23,7 +23,7 @@
       "name": "HV Battery Voltage",
       "shortName": "HV_V",
       "modeAndPid": "22432D",
-      "equation": "(A*256+B)*0.0625",
+      "equation": "(A*256+B)*0.5",
       "header": "7E4",
       "units": "V",
       "minValue": 0,

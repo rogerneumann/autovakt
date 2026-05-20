@@ -326,6 +326,7 @@ class OBD2Repository @Inject constructor(
                 if (t.length > 1 && t[1] == ':') t.substring(2).trim() else t
             }
             .replace(" ", "")
+            .replace(">", "")   // ATL0 puts the ELM327 prompt on the same line as data
             .trim()
             .uppercase()
 
