@@ -1,0 +1,83 @@
+{
+  "id": "kia_ev9",
+  "make": "Kia",
+  "model": "EV9",
+  "year": 2024,
+  "region": "US",
+  "powertrain": "BEV",
+  "initCommands": ["ATSP6", "ATFCSH 7EC", "ATFCSD 300000", "ATFCSM 1", "ATSH 7E4"],
+  "vinPatterns": ["5XY1K", "5XY2K"],
+  "defaultSlots": ["SOC", "PWR", "SPEED", "BATT_T_MAX"],
+  "pids": [
+    {
+      "name": "State of Charge",
+      "shortName": "SOC",
+      "modeAndPid": "220101",
+      "equation": "E*0.5",
+      "header": "7E4",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "HV Battery Voltage",
+      "shortName": "HV_V",
+      "modeAndPid": "220101",
+      "equation": "(M*256+N)*0.1",
+      "header": "7E4",
+      "units": "V",
+      "minValue": 0,
+      "maxValue": 900
+    },
+    {
+      "name": "HV Battery Current",
+      "shortName": "HV_I",
+      "modeAndPid": "220101",
+      "equation": "(SIGNED(K)*256+L)*0.1",
+      "header": "7E4",
+      "units": "A",
+      "minValue": -500,
+      "maxValue": 500
+    },
+    {
+      "name": "Battery Temp Max",
+      "shortName": "BATT_T_MAX",
+      "modeAndPid": "220101",
+      "equation": "O-40",
+      "header": "7E4",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 80
+    },
+    {
+      "name": "Battery Temp Min",
+      "shortName": "BATT_T_MIN",
+      "modeAndPid": "220101",
+      "equation": "P-40",
+      "header": "7E4",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 80
+    },
+    {
+      "name": "State of Health",
+      "shortName": "SOH",
+      "modeAndPid": "220101",
+      "equation": "Q",
+      "header": "7E4",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    }
+  ]
+}
