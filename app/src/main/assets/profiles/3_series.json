@@ -63,7 +63,7 @@
       "name": "Oil Temp",
       "shortName": "OIL_T",
       "modeAndPid": "225C",
-      "equation": "A-40",
+      "equation": "A-48",
       "header": "6F1",
       "units": "°C",
       "minValue": -40,

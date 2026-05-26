@@ -5,59 +5,29 @@
   "year": 2023,
   "region": "US",
   "powertrain": "BEV",
-  "initCommands": ["ATSP6", "ATFCSH 7CC", "ATFCSD 300000", "ATFCSM 1", "ATSH 7C4"],
+  "initCommands": ["ATSP6", "ATFCSH 7DA", "ATFCSD 300000", "ATFCSM 1", "ATSH 7D2"],
   "vinPatterns": ["JTMEB", "JTMAB", "2T2B3"],
-  "defaultSlots": ["SOC", "PWR", "SPEED", "BATT_T_MAX"],
+  "defaultSlots": ["SOC", "SPEED"],
   "pids": [
     {
       "name": "State of Charge",
       "shortName": "SOC",
-      "modeAndPid": "220401",
-      "equation": "A*0.5",
-      "header": "7C4",
+      "modeAndPid": "221F5B",
+      "equation": "A*100/255",
+      "header": "7D2",
       "units": "%",
       "minValue": 0,
       "maxValue": 100
     },
     {
-      "name": "HV Battery Voltage",
-      "shortName": "HV_V",
-      "modeAndPid": "220401",
-      "equation": "(C*256+D)*0.1",
-      "header": "7C4",
-      "units": "V",
+      "name": "State of Charge (display)",
+      "shortName": "SOC_D",
+      "modeAndPid": "221739",
+      "equation": "A",
+      "header": "745",
+      "units": "%",
       "minValue": 0,
-      "maxValue": 800
-    },
-    {
-      "name": "HV Battery Current",
-      "shortName": "HV_I",
-      "modeAndPid": "220401",
-      "equation": "(SIGNED(E)*256+F)*0.1",
-      "header": "7C4",
-      "units": "A",
-      "minValue": -400,
-      "maxValue": 400
-    },
-    {
-      "name": "Battery Temp Max",
-      "shortName": "BATT_T_MAX",
-      "modeAndPid": "220401",
-      "equation": "G-40",
-      "header": "7C4",
-      "units": "°C",
-      "minValue": -40,
-      "maxValue": 80
-    },
-    {
-      "name": "Battery Temp Min",
-      "shortName": "BATT_T_MIN",
-      "modeAndPid": "220401",
-      "equation": "H-40",
-      "header": "7C4",
-      "units": "°C",
-      "minValue": -40,
-      "maxValue": 80
+      "maxValue": 100
     },
     {
       "name": "Vehicle Speed",

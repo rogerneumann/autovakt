@@ -7,7 +7,7 @@
   "powertrain": "ICE_GAS",
   "initCommands": ["ATSP6", "ATFCSH 7E8", "ATFCSD 300000", "ATFCSM 1"],
   "vinPatterns": ["1FA6P", "1FA6H"],
-  "defaultSlots": ["RPM", "SPEED", "BOOST_PSI", "OIL_T"],
+  "defaultSlots": ["RPM", "SPEED", "THROTTLE", "COOLANT"],
   "pids": [
     {
       "name": "Engine RPM",
@@ -58,16 +58,6 @@
       "units": "PSI",
       "minValue": -15,
       "maxValue": 25
-    },
-    {
-      "name": "Oil Temp",
-      "shortName": "OIL_T",
-      "modeAndPid": "22D400",
-      "equation": "A-40",
-      "header": "7E0",
-      "units": "°C",
-      "minValue": -40,
-      "maxValue": 200
     },
     {
       "name": "Throttle Position",

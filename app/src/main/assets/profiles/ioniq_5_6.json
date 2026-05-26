@@ -43,7 +43,7 @@
       "name": "Battery Temp Max",
       "shortName": "BATT_T_MAX",
       "modeAndPid": "220101",
-      "equation": "O-40",
+      "equation": "SIGNED(O)",
       "header": "7E4",
       "units": "°C",
       "minValue": -40,
@@ -53,21 +53,11 @@
       "name": "Battery Temp Min",
       "shortName": "BATT_T_MIN",
       "modeAndPid": "220101",
-      "equation": "P-40",
+      "equation": "SIGNED(P)",
       "header": "7E4",
       "units": "°C",
       "minValue": -40,
       "maxValue": 80
-    },
-    {
-      "name": "State of Health",
-      "shortName": "SOH",
-      "modeAndPid": "220101",
-      "equation": "Q",
-      "header": "7E4",
-      "units": "%",
-      "minValue": 0,
-      "maxValue": 100
     },
     {
       "name": "Vehicle Speed",

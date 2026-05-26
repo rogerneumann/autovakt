@@ -12,9 +12,9 @@
     {
       "name": "HV Battery SOC",
       "shortName": "SOC",
-      "modeAndPid": "2202BC",
+      "modeAndPid": "22005B",
       "equation": "A*100/255",
-      "header": "7E4",
+      "header": "7E0",
       "units": "%",
       "minValue": 0,
       "maxValue": 100

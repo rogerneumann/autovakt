@@ -12,7 +12,7 @@
     {
       "name": "HV Battery SOC",
       "shortName": "SOC",
-      "modeAndPid": "220101",
+      "modeAndPid": "2101",
       "equation": "E*0.5",
       "header": "7E4",
       "units": "%",
@@ -22,7 +22,7 @@
     {
       "name": "HV Battery Voltage",
       "shortName": "HV_V",
-      "modeAndPid": "220101",
+      "modeAndPid": "2101",
       "equation": "(M*256+N)*0.1",
       "header": "7E4",
       "units": "V",
@@ -32,7 +32,7 @@
     {
       "name": "HV Battery Current",
       "shortName": "HV_I",
-      "modeAndPid": "220101",
+      "modeAndPid": "2101",
       "equation": "(SIGNED(K)*256+L)*0.1",
       "header": "7E4",
       "units": "A",
@@ -42,8 +42,8 @@
     {
       "name": "Battery Temp Max",
       "shortName": "BATT_T_MAX",
-      "modeAndPid": "220101",
-      "equation": "O-40",
+      "modeAndPid": "2101",
+      "equation": "SIGNED(O)",
       "header": "7E4",
       "units": "°C",
       "minValue": -40,

@@ -5,7 +5,7 @@
   "year": 2015,
   "region": "US",
   "powertrain": "ICE_DIESEL",
-  "initCommands": ["ATSP6", "ATFCSH 7E9", "ATFCSD 300000", "ATFCSM 1", "ATSH 7E1"],
+  "initCommands": ["ATSP6", "ATFCSH 7E8", "ATFCSD 300000", "ATFCSM 1", "ATSH 7E0"],
   "vinPatterns": ["WVWKP", "WVWKR", "3VWFE"],
   "defaultSlots": ["RPM", "SPEED", "BOOST_PSI", "COOLANT"],
   "pids": [
@@ -60,14 +60,14 @@
       "maxValue": 30
     },
     {
-      "name": "DPF Soot Load",
+      "name": "DPF Soot Mass",
       "shortName": "DPF_SOOT",
-      "modeAndPid": "222003",
-      "equation": "A*100/255",
-      "header": "7E1",
-      "units": "%",
+      "modeAndPid": "22208B",
+      "equation": "(A*256+B)/100",
+      "header": "7E0",
+      "units": "g",
       "minValue": 0,
-      "maxValue": 100
+      "maxValue": 60
     },
     {
       "name": "Fuel Level",

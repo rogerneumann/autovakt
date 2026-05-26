@@ -5,16 +5,16 @@
   "year": 2021,
   "region": "US",
   "powertrain": "PHEV",
-  "initCommands": ["ATSP6", "ATFCSH 7C8", "ATFCSD 300000", "ATFCSM 1", "ATSH 7C0"],
+  "initCommands": ["ATSP6", "ATFCSH 7DA", "ATFCSD 300000", "ATFCSM 1", "ATSH 7D2"],
   "vinPatterns": ["JTMEWRFV", "4T3EWRFV"],
   "defaultSlots": ["SOC", "SPEED", "HV_V", "BATT_T_MAX"],
   "pids": [
     {
       "name": "HV Battery SOC",
       "shortName": "SOC",
-      "modeAndPid": "221D6E",
-      "equation": "A/2",
-      "header": "7C0",
+      "modeAndPid": "221F5B",
+      "equation": "A*100/255",
+      "header": "7D2",
       "units": "%",
       "minValue": 0,
       "maxValue": 100

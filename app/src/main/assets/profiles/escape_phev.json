@@ -5,16 +5,16 @@
   "year": 2020,
   "region": "US",
   "powertrain": "PHEV",
-  "initCommands": ["ATSP6", "ATFCSH 72E", "ATFCSD 300000", "ATFCSM 1", "ATSH 726"],
+  "initCommands": ["ATSP6", "ATFCSH 7EC", "ATFCSD 300000", "ATFCSM 1", "ATSH 7E4"],
   "vinPatterns": ["1FMCU"],
   "defaultSlots": ["SOC", "SPEED", "HV_V", "COOLANT"],
   "pids": [
     {
       "name": "HV Battery SOC",
       "shortName": "SOC",
-      "modeAndPid": "2201A3",
-      "equation": "B*100/255",
-      "header": "726",
+      "modeAndPid": "224845",
+      "equation": "A/2",
+      "header": "7E4",
       "units": "%",
       "minValue": 0,
       "maxValue": 100
@@ -22,21 +22,21 @@
     {
       "name": "HV Battery Voltage",
       "shortName": "HV_V",
-      "modeAndPid": "2201A7",
+      "modeAndPid": "22480D",
       "equation": "(A*256+B)*0.01",
-      "header": "726",
+      "header": "7E4",
       "units": "V",
       "minValue": 0,
-      "maxValue": 400
+      "maxValue": 200
     },
     {
       "name": "Battery Temp Max",
       "shortName": "BATT_T_MAX",
-      "modeAndPid": "2201A4",
-      "equation": "A-40",
-      "header": "726",
+      "modeAndPid": "224800",
+      "equation": "A-50",
+      "header": "7E4",
       "units": "°C",
-      "minValue": -40,
+      "minValue": -50,
       "maxValue": 80
     },
     {
