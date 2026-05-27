@@ -1,5 +1,6 @@
 package com.rogerneumann.autovakt.media
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -12,6 +13,7 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent
 import androidx.media.MediaBrowserServiceCompat
+import com.rogerneumann.autovakt.R
 import com.rogerneumann.autovakt.auto.render.BitmapMediaRenderer
 import com.rogerneumann.autovakt.auto.render.GaugeSlotResolver
 import com.rogerneumann.autovakt.auto.render.GaugeTheme
@@ -84,6 +86,16 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
                 override fun onPause() {
                     mediaRemoteManager.dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PAUSE)
                 }
+                override fun onCustomAction(action: String, extras: Bundle?) {
+                    if (action == "OPEN_MUSIC_APP") {
+                        val pkg = repository.liveData.value.activeMediaAppPackage
+                        if (!pkg.isNullOrBlank()) {
+                            packageManager.getLaunchIntentForPackage(pkg)
+                                ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                ?.let { startActivity(it) }
+                        }
+                    }
+                }
             })
 
             setPlaybackState(
@@ -94,7 +106,15 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
                         PlaybackStateCompat.ACTION_PAUSE or
                         PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
                         PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-                    ).build()
+                    )
+                    .addCustomAction(
+                        PlaybackStateCompat.CustomAction.Builder(
+                            "OPEN_MUSIC_APP",
+                            "Open Music App",
+                            R.drawable.ic_music_note_24
+                        ).build()
+                    )
+                    .build()
             )
 
             isActive = true
@@ -146,11 +166,9 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
             }
             else -> {
                 // HYBRID (default) and TELEMETRY: delegate to BitmapMediaRenderer.
-                // BitmapMediaRenderer splits gauge/music based on whether music is playing:
-                //   - HYBRID  → data already has currentSongTitle injected by OBD2Repository
-                //   - TELEMETRY → render data as-is; if music is playing strip is still shown,
-                //     matching the intent of "telemetry + optional music info"
-                val assignments = vehicleLayoutManager.getSlotAssignments("gauge_layout_global")
+                // Use the same VIN/MAC/profile-keyed slot assignments that OBD2Repository
+                // resolved on connect — not the global key which has no saved slots.
+                val assignments = vehicleLayoutManager.getSlotAssignments(repository.currentLayoutKey.value)
                 BitmapMediaRenderer.render(
                     data               = data,
                     theme              = currentTheme,

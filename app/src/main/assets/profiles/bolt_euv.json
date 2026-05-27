@@ -7,7 +7,7 @@
   "powertrain": "EV",
   "initCommands": ["ATSP6", "ATFCSH 7EC", "ATFCSD 300000", "ATFCSM 1"],
   "vinPatterns": ["1G1FZ", "1G1FY"],
-  "defaultSlots": ["SOC", "SPEED", "BATT_T_MAX", "averageMiPerKwh"],
+  "defaultSlots": ["SOC", "PWR", "instantMiPerKwh", "averageMiPerKwh"],
   "pids": [
     {
       "name": "State of Charge",
@@ -28,6 +28,16 @@
       "units": "V",
       "minValue": 0,
       "maxValue": 450
+    },
+    {
+      "name": "HV Pack Current",
+      "shortName": "HV_I",
+      "modeAndPid": "222414",
+      "equation": "(SIGNED(A)*256+B)/20",
+      "header": "7E1",
+      "units": "A",
+      "minValue": -200,
+      "maxValue": 500
     },
     {
       "name": "Battery Temp Max",
