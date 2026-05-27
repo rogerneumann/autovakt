@@ -46,9 +46,15 @@ object BitmapMediaRenderer {
         profile: VehicleProfile,
         vehicleLayoutManager: VehicleLayoutManager,
         width: Int = 800,
-        height: Int = 480
+        height: Int = 480,
+        into: Bitmap? = null
     ): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val bitmap = if (into != null && into.width == width && into.height == height) {
+            into.eraseColor(0)
+            into
+        } else {
+            Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        }
         val canvas = Canvas(bitmap)
 
         val slots = GaugeSlotResolver.resolve(data, assignments, profile, vehicleLayoutManager)

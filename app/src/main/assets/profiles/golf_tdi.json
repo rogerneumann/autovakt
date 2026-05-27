@@ -6,7 +6,7 @@
   "region": "US",
   "powertrain": "ICE_DIESEL",
   "initCommands": ["ATSP6", "ATFCSH 7E8", "ATFCSD 300000", "ATFCSM 1", "ATSH 7E0"],
-  "vinPatterns": ["WVWKP", "WVWKR", "3VWFE"],
+  "vinPatterns": ["WVWKP", "WVWKR"],
   "defaultSlots": ["RPM", "SPEED", "BOOST_PSI", "COOLANT"],
   "pids": [
     {

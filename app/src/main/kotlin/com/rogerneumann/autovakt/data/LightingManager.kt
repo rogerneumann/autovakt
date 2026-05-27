@@ -13,7 +13,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -172,7 +174,7 @@ class LightingManager @Inject constructor(
     // ── Background loops ──────────────────────────────────────────────────────
 
     private suspend fun timeUpdateLoop() {
-        while (true) {
+        while (currentCoroutineContext().isActive) {
             delay(60_000)
             val m = getMode()
             if (m == LightingMode.AUTO_TIME || m == LightingMode.AUTO_BEST) update()

@@ -1,6 +1,7 @@
 package com.rogerneumann.autovakt.data
 
 import android.content.Context
+import android.util.Log
 import com.rogerneumann.autovakt.obd2.PidFormulaParser
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONObject
@@ -35,7 +36,7 @@ class VehicleProfileHub @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            // Log error
+            Log.e("VehicleProfileHub", "Failed to load embedded profiles", e)
         }
     }
 
@@ -56,11 +57,11 @@ class VehicleProfileHub @Inject constructor(
                     val profile = parseProfile(jsonString)
                     profiles[profile.id] = profile
                 } catch (e: Exception) {
-                    // Skip malformed files, continue loading others
+                    Log.e("VehicleProfileHub", "Skipping malformed profile: ${file.name}", e)
                 }
             }
         } catch (e: Exception) {
-            // Log error
+            Log.e("VehicleProfileHub", "Failed to load user-imported profiles", e)
         }
     }
 

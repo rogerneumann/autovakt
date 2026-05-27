@@ -6,7 +6,7 @@
   "region": "US",
   "powertrain": "ICE_GAS",
   "initCommands": ["ATSP6", "ATFCSH 7E8", "ATFCSD 300000", "ATFCSM 1"],
-  "vinPatterns": ["1GCRY", "1GCRZ", "1GC1Y", "3GCUK"],
+  "vinPatterns": ["1GCRY", "1GCRZ", "3GCUK"],
   "defaultSlots": ["RPM", "SPEED", "BOOST_PSI", "COOLANT"],
   "pids": [
     {

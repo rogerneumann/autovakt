@@ -59,6 +59,9 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
     private val bitmapW = 800
     private val bitmapH = 480
 
+    // Pre-allocated and reused every render cycle to avoid 1.5 MB GC pressure per frame
+    private val renderBitmap by lazy { Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888) }
+
     private var currentTheme: GaugeTheme = GaugeTheme.DARK
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -178,9 +181,9 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
         val bitmap: Bitmap = when (displayMode) {
             "MEDIA" -> {
                 // Full-screen media card — rendered inline (controls not provided by AA strip here)
-                val bmp = Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888)
-                drawMediaFull(Canvas(bmp), songTitle, songArtist)
-                bmp
+                renderBitmap.eraseColor(0)
+                drawMediaFull(Canvas(renderBitmap), songTitle, songArtist)
+                renderBitmap
             }
             else -> {
                 // HYBRID (default) and TELEMETRY: delegate to BitmapMediaRenderer.
@@ -194,7 +197,8 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
                     profile            = data.vehicleProfile,
                     vehicleLayoutManager = vehicleLayoutManager,
                     width              = bitmapW,
-                    height             = bitmapH
+                    height             = bitmapH,
+                    into               = renderBitmap
                 )
             }
         }

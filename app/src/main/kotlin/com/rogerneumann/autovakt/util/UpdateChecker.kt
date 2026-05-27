@@ -17,8 +17,8 @@ object UpdateChecker {
      * only when a tag other than [currentVersion] is found. Silent on any network error or when
      * no releases exist yet.
      */
-    fun check(currentVersion: String, onUpdateAvailable: (latestVersion: String) -> Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
+    fun check(scope: CoroutineScope, currentVersion: String, onUpdateAvailable: (latestVersion: String) -> Unit) {
+        scope.launch(Dispatchers.IO) {
             try {
                 val conn = URL(API_URL).openConnection() as HttpURLConnection
                 conn.connectTimeout = 5_000

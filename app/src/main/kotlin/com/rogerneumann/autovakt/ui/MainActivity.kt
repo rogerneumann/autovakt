@@ -215,7 +215,7 @@ class MainActivity : AppCompatActivity() {
         val header = binding.navigationView.getHeaderView(0)
         header.findViewById<TextView>(R.id.navHeaderVersion).text = "v${BuildConfig.VERSION_NAME}"
 
-        UpdateChecker.check(BuildConfig.VERSION_NAME) { newVersion ->
+        UpdateChecker.check(lifecycleScope, BuildConfig.VERSION_NAME) { newVersion ->
             Toast.makeText(this, "Update available: v$newVersion — get it from GitHub Releases", Toast.LENGTH_LONG).show()
         }
     }

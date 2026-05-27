@@ -21,6 +21,7 @@ class AutoVaktNotificationListener : NotificationListenerService() {
 
     private var mediaSessionManager: MediaSessionManager? = null
     private var activeController: MediaController? = null
+    private var activeMediaCallback: MediaController.Callback? = null
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -46,7 +47,8 @@ class AutoVaktNotificationListener : NotificationListenerService() {
             it.playbackState?.state == PlaybackState.STATE_PLAYING
         } ?: controllers?.firstOrNull()
 
-        activeController?.registerCallback(object : MediaController.Callback() {
+        val prevController = activeController
+        val callback = object : MediaController.Callback() {
             override fun onMetadataChanged(metadata: MediaMetadata?) {
                 super.onMetadataChanged(metadata)
                 val title = extractTitle(metadata)
@@ -54,7 +56,10 @@ class AutoVaktNotificationListener : NotificationListenerService() {
                 val packageName = activeController?.packageName ?: ""
                 mediaRemoteManager.updateMetadata(title, artist, packageName)
             }
-        })
+        }
+        activeMediaCallback?.let { prevController?.unregisterCallback(it) }
+        activeController?.registerCallback(callback)
+        activeMediaCallback = callback
 
         // Emit current metadata immediately if controller already has it
         activeController?.metadata?.let { metadata ->

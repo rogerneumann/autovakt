@@ -6,7 +6,7 @@
   "region": "US",
   "powertrain": "EV",
   "initCommands": ["ATSP6", "ATFCSH 7EC", "ATFCSD 300000", "ATFCSM 1", "ATSH 7E4"],
-  "vinPatterns": ["KM8K3", "KM8K4"],
+  "vinPatterns": ["KM8K4"],
   "defaultSlots": ["SOC", "SPEED", "HV_V", "BATT_T_MAX"],
   "pids": [
     {

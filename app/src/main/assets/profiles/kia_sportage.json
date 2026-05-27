@@ -6,7 +6,7 @@
   "region": "US",
   "powertrain": "ICE_GAS",
   "initCommands": ["ATSP0"],
-  "vinPatterns": ["KNDPC", "5XYP5", "5XYP3"],
+  "vinPatterns": ["KNDPC", "5XYP5"],
   "defaultSlots": ["RPM", "SPEED", "COOLANT", "LOAD"],
   "pids": [
     {

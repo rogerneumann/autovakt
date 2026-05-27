@@ -5,6 +5,7 @@ import androidx.car.app.CarAppService
 import androidx.car.app.Session
 import androidx.car.app.Screen
 import androidx.car.app.validation.HostValidator
+import com.rogerneumann.autovakt.BuildConfig
 import com.rogerneumann.autovakt.auto.screens.DashboardScreen
 import com.rogerneumann.autovakt.data.LightingManager
 import com.rogerneumann.autovakt.data.OBD2Repository
@@ -22,7 +23,13 @@ class AutoVaktCarAppService : CarAppService() {
     @Inject lateinit var mediaRemoteManager: MediaRemoteManager
 
     override fun createHostValidator(): HostValidator {
-        return HostValidator.ALLOW_ALL_HOSTS_VALIDATOR
+        return if (BuildConfig.DEBUG) {
+            HostValidator.ALLOW_ALL_HOSTS_VALIDATOR
+        } else {
+            HostValidator.Builder(applicationContext)
+                .addAllowedHosts(androidx.car.app.R.array.hosts_allowlist_sample)
+                .build()
+        }
     }
 
     override fun onCreateSession(): Session {
