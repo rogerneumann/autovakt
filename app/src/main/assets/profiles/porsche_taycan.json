@@ -1,0 +1,64 @@
+{
+  "id": "porsche_taycan",
+  "make": "Porsche",
+  "model": "Taycan",
+  "year": 2020,
+  "region": "US",
+  "powertrain": "EV",
+  "_source": "OBDb/Porsche-Taycan signalsets/v3/default.json — confirmed DIDs",
+  "initCommands": ["ATSP6", "ATFCSH 7ED", "ATFCSD 300000", "ATFCSM 1", "ATSH 7E5", "1003"],
+  "vinPatterns": ["WP0A", "WP0B", "WP0C"],
+  "defaultSlots": ["SOC", "SPEED", "HV_V", "BATT_T_MAX"],
+  "pids": [
+    {
+      "name": "State of Charge",
+      "shortName": "SOC",
+      "modeAndPid": "22028C",
+      "equation": "A",
+      "header": "7E5",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "HV Battery Voltage",
+      "shortName": "HV_V",
+      "modeAndPid": "221801",
+      "equation": "(A*256+B)/10",
+      "header": "7E5",
+      "units": "V",
+      "minValue": 0,
+      "maxValue": 1000
+    },
+    {
+      "name": "HV Battery Current",
+      "shortName": "HV_I",
+      "modeAndPid": "221802",
+      "equation": "(A*256+B)*2.56-1500",
+      "header": "7E5",
+      "units": "A",
+      "minValue": -500,
+      "maxValue": 500
+    },
+    {
+      "name": "Battery Temp (BMC-E sensor 1)",
+      "shortName": "BATT_T_MAX",
+      "modeAndPid": "22180C",
+      "equation": "A-50",
+      "header": "7E5",
+      "units": "°C",
+      "minValue": -50,
+      "maxValue": 80
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 260
+    }
+  ]
+}

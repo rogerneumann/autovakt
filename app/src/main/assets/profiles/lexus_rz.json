@@ -1,0 +1,44 @@
+{
+  "id": "lexus_rz",
+  "make": "Lexus",
+  "model": "RZ 450e",
+  "year": 2023,
+  "region": "US",
+  "powertrain": "EV",
+  "_source": "Toyota e-TNGA platform. Same ECU addressing as toyota_bz4x.",
+  "initCommands": ["ATSP6", "ATFCSH 7DA", "ATFCSD 300000", "ATFCSM 1", "ATSH 7D2"],
+  "vinPatterns": ["JTJH", "JTJG"],
+  "defaultSlots": ["SOC", "SPEED"],
+  "pids": [
+    {
+      "name": "State of Charge",
+      "shortName": "SOC",
+      "modeAndPid": "221F5B",
+      "equation": "A*100/255",
+      "header": "7D2",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Display SOC",
+      "shortName": "SOC_D",
+      "modeAndPid": "221739",
+      "equation": "A",
+      "header": "745",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    }
+  ]
+}

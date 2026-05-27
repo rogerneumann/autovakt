@@ -1,0 +1,55 @@
+{
+  "id": "bmw_i4_ix",
+  "make": "BMW",
+  "model": "i4 / iX",
+  "year": 2022,
+  "region": "US",
+  "powertrain": "EV",
+  "_source": "OBDb/BMW-i4 confirms ATSH 6F1. DID mapping hypothesized from BMW i3 OVMS source (same SME module family); unconfirmed for i4/iX specifically.",
+  "_caveat": "Requires ISO-TP extended addressing (ATCEA 07). DID addresses are a strong hypothesis from i3 but need live vehicle validation on i4/iX.",
+  "initCommands": ["ATSP6", "ATFCSH 607", "ATFCSD 300000", "ATFCSM 1", "ATSH 6F1", "ATCEA 07"],
+  "vinPatterns": ["WBA5U", "WBA7U", "WBY8P", "WBY4P"],
+  "defaultSlots": ["SOC", "HV_V", "HV_I", "BATT_T_MAX"],
+  "pids": [
+    {
+      "name": "State of Charge",
+      "shortName": "SOC",
+      "modeAndPid": "22DDBC",
+      "equation": "(A*256+B)/10",
+      "header": "6F1",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "HV Battery Voltage",
+      "shortName": "HV_V",
+      "modeAndPid": "22DD68",
+      "equation": "(A*256+B)/100",
+      "header": "6F1",
+      "units": "V",
+      "minValue": 0,
+      "maxValue": 600
+    },
+    {
+      "name": "HV Battery Current",
+      "shortName": "HV_I",
+      "modeAndPid": "22DD69",
+      "equation": "(SIGNED(A)*16777216+B*65536+C*256+D)/100",
+      "header": "6F1",
+      "units": "A",
+      "minValue": -600,
+      "maxValue": 600
+    },
+    {
+      "name": "Battery Temp Max",
+      "shortName": "BATT_T_MAX",
+      "modeAndPid": "22DDC0",
+      "equation": "(SIGNED(C)*256+D)/100",
+      "header": "6F1",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 80
+    }
+  ]
+}

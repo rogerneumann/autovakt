@@ -1,0 +1,73 @@
+{
+  "id": "hyundai_santa_fe_phev",
+  "make": "Hyundai",
+  "model": "Santa Fe PHEV",
+  "year": 2021,
+  "region": "US",
+  "powertrain": "PHEV",
+  "initCommands": ["ATSP6", "ATFCSH 7EC", "ATFCSD 300000", "ATFCSM 1", "ATSH 7E4"],
+  "vinPatterns": ["KM8R3", "5NMS4"],
+  "defaultSlots": ["SOC", "SPEED", "HV_V", "BATT_T_MAX"],
+  "pids": [
+    {
+      "name": "HV Battery SOC",
+      "shortName": "SOC",
+      "modeAndPid": "2101",
+      "equation": "E*0.5",
+      "header": "7E4",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "HV Battery Voltage",
+      "shortName": "HV_V",
+      "modeAndPid": "2101",
+      "equation": "(M*256+N)*0.1",
+      "header": "7E4",
+      "units": "V",
+      "minValue": 0,
+      "maxValue": 300
+    },
+    {
+      "name": "HV Battery Current",
+      "shortName": "HV_I",
+      "modeAndPid": "2101",
+      "equation": "(SIGNED(K)*256+L)*0.1",
+      "header": "7E4",
+      "units": "A",
+      "minValue": -150,
+      "maxValue": 150
+    },
+    {
+      "name": "Battery Temp Max",
+      "shortName": "BATT_T_MAX",
+      "modeAndPid": "2101",
+      "equation": "SIGNED(O)",
+      "header": "7E4",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 80
+    },
+    {
+      "name": "Engine Coolant Temp",
+      "shortName": "COOLANT",
+      "modeAndPid": "0105",
+      "equation": "A-40",
+      "header": "7DF",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 215
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    }
+  ]
+}

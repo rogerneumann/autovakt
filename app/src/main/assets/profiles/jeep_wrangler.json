@@ -1,0 +1,83 @@
+{
+  "id": "jeep_wrangler",
+  "make": "Jeep",
+  "model": "Wrangler",
+  "year": 2018,
+  "region": "US",
+  "powertrain": "ICE_GAS",
+  "initCommands": ["ATSP0"],
+  "vinPatterns": ["1C4HJ", "1C4BJ", "1C4GJ"],
+  "defaultSlots": ["RPM", "SPEED", "COOLANT", "LOAD"],
+  "pids": [
+    {
+      "name": "Engine RPM",
+      "shortName": "RPM",
+      "modeAndPid": "010C",
+      "equation": "(A*256+B)/4",
+      "header": "7DF",
+      "units": "rpm",
+      "minValue": 0,
+      "maxValue": 7000
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    },
+    {
+      "name": "Engine Load",
+      "shortName": "LOAD",
+      "modeAndPid": "0104",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Engine Coolant Temp",
+      "shortName": "COOLANT",
+      "modeAndPid": "0105",
+      "equation": "A-40",
+      "header": "7DF",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 215
+    },
+    {
+      "name": "Throttle Position",
+      "shortName": "THROTTLE",
+      "modeAndPid": "0111",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "Intake Air Temp",
+      "shortName": "IAT",
+      "modeAndPid": "010F",
+      "equation": "A-40",
+      "header": "7DF",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 215
+    },
+    {
+      "name": "Fuel Level",
+      "shortName": "FUEL",
+      "modeAndPid": "012F",
+      "equation": "A*100/255",
+      "header": "7DF",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "id": "chevy_silverado_ev",
+  "make": "Chevrolet",
+  "model": "Silverado EV",
+  "year": 2024,
+  "region": "US",
+  "powertrain": "EV",
+  "_source": "GM Ultium platform — DIDs assumed same as BEV2 Bolt EUV; field verification pending",
+  "initCommands": ["ATSP6", "ATFCSH 7EC", "ATFCSD 300000", "ATFCSM 1"],
+  "vinPatterns": ["1GC4W", "1GC5W"],
+  "defaultSlots": ["SOC", "SPEED", "BATT_T_MAX", "averageMiPerKwh"],
+  "pids": [
+    {
+      "name": "State of Charge",
+      "shortName": "SOC",
+      "modeAndPid": "228334",
+      "equation": "A*100/255",
+      "header": "7E4",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "HV Battery Voltage",
+      "shortName": "HV_V",
+      "modeAndPid": "22432D",
+      "equation": "(A*256+B)*0.5",
+      "header": "7E4",
+      "units": "V",
+      "minValue": 0,
+      "maxValue": 500
+    },
+    {
+      "name": "Battery Temp Max",
+      "shortName": "BATT_T_MAX",
+      "modeAndPid": "22434F",
+      "equation": "A-40",
+      "header": "7E4",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 100
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    }
+  ]
+}

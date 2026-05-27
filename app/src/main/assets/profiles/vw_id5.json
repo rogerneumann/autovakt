@@ -1,0 +1,54 @@
+{
+  "id": "vw_id5",
+  "make": "Volkswagen",
+  "model": "ID.5",
+  "year": 2022,
+  "region": "EU",
+  "powertrain": "EV",
+  "_caveat": "MEB BMS uses CAN-FD (29-bit extended frames). Standard ELM327 with ATSP6 cannot reach battery DIDs. Requires CAN-FD adapter (OBDLink CX or Vgate iCar Pro BLE).",
+  "initCommands": ["ATSP6", "ATFCSH 7EF", "ATFCSD 300000", "ATFCSM 1", "ATSH 7E7"],
+  "vinPatterns": ["WVW", "WVWZ"],
+  "defaultSlots": ["SOC", "SPEED", "HV_V", "BATT_T_MAX"],
+  "pids": [
+    {
+      "name": "State of Charge",
+      "shortName": "SOC",
+      "modeAndPid": "223DEF",
+      "equation": "(A*256+B)/100",
+      "header": "FC00",
+      "units": "%",
+      "minValue": 0,
+      "maxValue": 100
+    },
+    {
+      "name": "HV Battery Voltage",
+      "shortName": "HV_V",
+      "modeAndPid": "221E3B",
+      "equation": "(A*256+B)*0.25",
+      "header": "FC00",
+      "units": "V",
+      "minValue": 0,
+      "maxValue": 500
+    },
+    {
+      "name": "Battery Temp Max",
+      "shortName": "BATT_T_MAX",
+      "modeAndPid": "221E0E",
+      "equation": "(SIGNED(A)*256+B)/64",
+      "header": "FC00",
+      "units": "°C",
+      "minValue": -40,
+      "maxValue": 80
+    },
+    {
+      "name": "Vehicle Speed",
+      "shortName": "SPEED",
+      "modeAndPid": "010D",
+      "equation": "A",
+      "header": "7DF",
+      "units": "km/h",
+      "minValue": 0,
+      "maxValue": 200
+    }
+  ]
+}
