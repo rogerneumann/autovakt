@@ -87,12 +87,23 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
                     mediaRemoteManager.dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PAUSE)
                 }
                 override fun onCustomAction(action: String, extras: Bundle?) {
-                    if (action == "OPEN_MUSIC_APP") {
-                        val pkg = repository.liveData.value.activeMediaAppPackage
-                        if (!pkg.isNullOrBlank()) {
-                            packageManager.getLaunchIntentForPackage(pkg)
-                                ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                ?.let { startActivity(it) }
+                    when (action) {
+                        "CYCLE_VIEW" -> {
+                            AutoVaktDisplayState.displayMode.value = when (
+                                AutoVaktDisplayState.displayMode.value
+                            ) {
+                                "HYBRID"    -> "TELEMETRY"
+                                "TELEMETRY" -> "MEDIA"
+                                else        -> "HYBRID"   // MEDIA → back to HYBRID
+                            }
+                        }
+                        "OPEN_MUSIC_APP" -> {
+                            val pkg = repository.liveData.value.activeMediaAppPackage
+                            if (!pkg.isNullOrBlank()) {
+                                packageManager.getLaunchIntentForPackage(pkg)
+                                    ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    ?.let { startActivity(it) }
+                            }
                         }
                     }
                 }
@@ -106,6 +117,13 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
                         PlaybackStateCompat.ACTION_PAUSE or
                         PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
                         PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+                    )
+                    .addCustomAction(
+                        PlaybackStateCompat.CustomAction.Builder(
+                            "CYCLE_VIEW",
+                            "Cycle View",
+                            R.drawable.ic_grid_view_24
+                        ).build()
                     )
                     .addCustomAction(
                         PlaybackStateCompat.CustomAction.Builder(
