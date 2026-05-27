@@ -43,7 +43,7 @@ class OBD2ForegroundService : Service() {
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("AutoVakt Connected")
             .setContentText("Monitoring vehicle telemetry...")
-            .setSmallIcon(com.rogerneumann.autovakt.R.mipmap.ic_launcher)
+            .setSmallIcon(com.rogerneumann.autovakt.R.drawable.ic_launcher_foreground)
             .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {

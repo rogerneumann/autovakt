@@ -39,12 +39,12 @@ def buildCode = todayStr.toInteger() * 100 + buildIteration  // e.g. 2026051601 
 
 android {
     namespace 'com.rogerneumann.autovakt'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.rogerneumann.autovakt"
         minSdk 26
-        targetSdk 34
+        targetSdk 35
         versionCode buildCode
         versionName buildDate
 

@@ -89,6 +89,10 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
                 override fun onPause() {
                     mediaRemoteManager.dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PAUSE)
                 }
+                override fun onPlayFromSearch(query: String?, extras: Bundle?) {
+                    // AutoVakt has no searchable content; proxy to the active media player
+                    mediaRemoteManager.dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY)
+                }
                 override fun onCustomAction(action: String, extras: Bundle?) {
                     when (action) {
                         "CYCLE_VIEW" -> {
@@ -119,7 +123,8 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
                         PlaybackStateCompat.ACTION_PLAY or
                         PlaybackStateCompat.ACTION_PAUSE or
                         PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                        PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH
                     )
                     .addCustomAction(
                         PlaybackStateCompat.CustomAction.Builder(
@@ -413,6 +418,10 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
         result: Result<MutableList<MediaBrowserCompat.MediaItem>>
     ) {
         result.sendResult(mutableListOf())
+    }
+
+    override fun onLoadItem(itemId: String?, result: Result<MediaBrowserCompat.MediaItem?>) {
+        result.sendResult(null)
     }
 
     override fun onDestroy() {
