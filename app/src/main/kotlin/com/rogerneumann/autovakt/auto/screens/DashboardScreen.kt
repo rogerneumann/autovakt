@@ -35,15 +35,10 @@ enum class DashboardDisplayMode { HYBRID, TELEMETRY, MEDIA }
  * The primary full-screen dashboard for Vakt.
  *
  * Implements high-performance Canvas drawing via [SurfaceCallback].
- * Template building is fully delegated to [MultiPaneLayoutManager] (Phase 4B)
- * so the action strip and background color adapt automatically to the
- * head unit's display mode (WIDE / FULL_SCREEN / NARROW).
+ * Template building is fully delegated to [MultiPaneLayoutManager] so the
+ * action strip and background color adapt to the head unit's display mode.
  *
- * Block 12c: layout and slot assignments are read from [VehicleLayoutManager]
- * each render frame via the global fallback key `"gauge_layout_global"`.
- * Block 12b will replace this with the proper per-VIN / per-profile key.
- *
- * Block 14c: swipe (onFling) switches between HYBRID / TELEMETRY / MEDIA views.
+ * Swipe (onFling) switches between HYBRID / TELEMETRY / MEDIA views.
  */
 class DashboardScreen(
     carContext: CarContext,
@@ -60,10 +55,6 @@ class DashboardScreen(
     private var currentTheme: GaugeTheme = GaugeTheme.DARK
     private var currentSurfaceContainer: SurfaceContainer? = null
     private var displayMode: DashboardDisplayMode = DashboardDisplayMode.HYBRID
-
-    // Hardcoded global key for Block 12c; Block 12b will provide the proper key via
-    // VehicleLayoutManager.resolveKey(vin, adapterMac, profileId).
-    private val layoutKey = "gauge_layout_global"
 
     // Paint objects for the media/hybrid overlay drawing
     private val overlayPaint = Paint().apply {
@@ -173,8 +164,9 @@ class DashboardScreen(
 
     /** Full telemetry: delegates entirely to GaugeRenderer (same as original). */
     private fun renderTelemetry(canvas: Canvas) {
-        val layout      = vehicleLayoutManager.getLayout(layoutKey, carContext, isAA = true)
-        val assignments = vehicleLayoutManager.getSlotAssignments(layoutKey)
+        val key         = repository.currentLayoutKey.value
+        val layout      = vehicleLayoutManager.getLayout(key, carContext, isAA = true)
+        val assignments = vehicleLayoutManager.getSlotAssignments(key)
         val profile     = lastData.vehicleProfile
         val slots = GaugeSlotResolver.resolve(lastData, assignments, profile, vehicleLayoutManager)
         renderer.draw(canvas, slots, layout, currentTheme)
@@ -205,8 +197,9 @@ class DashboardScreen(
         // ── Upper half: gauges clipped and scaled to the top 50% ─────────────
         canvas.save()
         canvas.clipRect(0f, 0f, w, splitY)
-        val layout      = vehicleLayoutManager.getLayout(layoutKey, carContext, isAA = true)
-        val assignments = vehicleLayoutManager.getSlotAssignments(layoutKey)
+        val key         = repository.currentLayoutKey.value
+        val layout      = vehicleLayoutManager.getLayout(key, carContext, isAA = true)
+        val assignments = vehicleLayoutManager.getSlotAssignments(key)
         val profile     = lastData.vehicleProfile
         val slots       = GaugeSlotResolver.resolve(lastData, assignments, profile, vehicleLayoutManager)
         renderer.draw(canvas, slots, layout, currentTheme, w, splitY)

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- OBD2 connection state and polling data are transient; don't back up -->
+        <exclude domain="sharedpref" path="autovakt_prefs.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="autovakt_prefs.xml" />
+    </device-transfer>
+</data-extraction-rules>
