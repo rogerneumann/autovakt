@@ -14,10 +14,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent
 import androidx.media.MediaBrowserServiceCompat
 import com.rogerneumann.autovakt.R
-import com.rogerneumann.autovakt.auto.render.BitmapMediaRenderer
 import com.rogerneumann.autovakt.auto.render.GaugeSlotResolver
-import com.rogerneumann.autovakt.auto.render.GaugeTheme
-import com.rogerneumann.autovakt.data.LightingManager
 import com.rogerneumann.autovakt.data.OBD2Repository
 import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.data.VehicleLayoutManager
@@ -50,7 +47,6 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
     @Inject lateinit var repository: OBD2Repository
     @Inject lateinit var mediaRemoteManager: MediaRemoteManager
     @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
-    @Inject lateinit var lightingManager: LightingManager
 
     private var mediaSession: MediaSessionCompat? = null
     private val rootId = "autovakt_root"
@@ -61,8 +57,6 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
 
     // Pre-allocated and reused every render cycle to avoid 1.5 MB GC pressure per frame
     private val renderBitmap by lazy { Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888) }
-
-    private var currentTheme: GaugeTheme = GaugeTheme.DARK
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -148,65 +142,37 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
 
         sessionToken = mediaSession?.sessionToken
 
-        // Observe liveData, display mode, media metadata, and theme; re-render on any change
+        // Re-render whenever telemetry, display mode, or media metadata changes
         serviceScope.launch {
             combine(
                 repository.liveData,
                 AutoVaktDisplayState.displayMode,
-                mediaRemoteManager.currentMetadata,
-                lightingManager.themeForAA
-            ) { values ->
-                @Suppress("UNCHECKED_CAST")
-                Triple(
-                    values[0] as AutoVaktLiveData,
-                    values[1] as String,
-                    values[3] as GaugeTheme
-                )
-            }
-                .collectLatest { (data, mode, theme) ->
-                    currentTheme = theme
-                    updateBitmap(data, mode)
-                }
+                mediaRemoteManager.currentMetadata
+            ) { data, mode, _ -> Pair(data, mode) }
+                .collectLatest { (data, mode) -> updateBitmap(data, mode) }
         }
     }
 
     /**
-     * Renders the appropriate bitmap and pushes it to the MediaSession.
-     *
-     * TELEMETRY and HYBRID modes are rendered via [BitmapMediaRenderer] which
-     * uses [GaugeRenderer] + [GaugeSlotResolver] for the gauge grid and draws
-     * the music strip when [AutoVaktLiveData.currentSongTitle] is set.
-     * MEDIA mode keeps the existing full-screen media card path.
+     * Renders the current bitmap and pushes it to the MediaSession.
+     * All three modes use the internal tile/strip renderers (dark background,
+     * large text — readable at Coolwalk slot size).
      */
     private fun updateBitmap(data: AutoVaktLiveData, displayMode: String) {
         val metadata = mediaRemoteManager.currentMetadata.value
         val songTitle = metadata.first
         val songArtist = metadata.second
+        val assignments = vehicleLayoutManager.getSlotAssignments(repository.currentLayoutKey.value)
 
-        val bitmap: Bitmap = when (displayMode) {
-            "MEDIA" -> {
-                // Full-screen media card — rendered inline (controls not provided by AA strip here)
-                renderBitmap.eraseColor(0)
-                drawMediaFull(Canvas(renderBitmap), songTitle, songArtist)
-                renderBitmap
-            }
-            else -> {
-                // HYBRID (default) and TELEMETRY: delegate to BitmapMediaRenderer.
-                // Use the same VIN/MAC/profile-keyed slot assignments that OBD2Repository
-                // resolved on connect — not the global key which has no saved slots.
-                val assignments = vehicleLayoutManager.getSlotAssignments(repository.currentLayoutKey.value)
-                BitmapMediaRenderer.render(
-                    data               = data,
-                    theme              = currentTheme,
-                    assignments        = assignments,
-                    profile            = data.vehicleProfile,
-                    vehicleLayoutManager = vehicleLayoutManager,
-                    width              = bitmapW,
-                    height             = bitmapH,
-                    into               = renderBitmap
-                )
-            }
+        renderBitmap.eraseColor(0)
+        val canvas = Canvas(renderBitmap)
+        when (displayMode) {
+            "MEDIA"     -> drawMediaFull(canvas, songTitle, songArtist)
+            "TELEMETRY" -> drawTelemetryFull(canvas, data, assignments)
+            else        -> drawHybrid(canvas, data, assignments, songTitle, songArtist)
         }
+
+        val bitmap: Bitmap = renderBitmap
 
         val titleText = when {
             displayMode == "MEDIA" -> if (songTitle.isNotBlank()) songTitle else "No media playing"
@@ -238,15 +204,15 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
         isAntiAlias = true
     }
 
-    private fun drawTelemetryFull(canvas: Canvas, data: AutoVaktLiveData) {
+    private fun drawTelemetryFull(canvas: Canvas, data: AutoVaktLiveData, assignments: List<String?>) {
         canvas.drawColor(Color.parseColor("#121212"))
-        drawTelemetryGrid(canvas, data, 0f, 0f, bitmapW.toFloat(), bitmapH.toFloat())
+        drawTelemetryGrid(canvas, data, assignments, 0f, 0f, bitmapW.toFloat(), bitmapH.toFloat())
     }
 
-    private fun drawHybrid(canvas: Canvas, data: AutoVaktLiveData, title: String, artist: String) {
+    private fun drawHybrid(canvas: Canvas, data: AutoVaktLiveData, assignments: List<String?>, title: String, artist: String) {
         canvas.drawColor(Color.parseColor("#121212"))
         val splitY = bitmapH * 0.55f
-        drawTelemetryGrid(canvas, data, 0f, 0f, bitmapW.toFloat(), splitY)
+        drawTelemetryGrid(canvas, data, assignments, 0f, 0f, bitmapW.toFloat(), splitY)
         drawMediaStrip(canvas, 0f, splitY, bitmapW.toFloat(), bitmapH.toFloat(), title, artist)
     }
 
@@ -259,11 +225,12 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
      * Draws a 2×2 grid of telemetry tiles from the first 4 slot assignments.
      */
     private fun drawTelemetryGrid(
-        canvas: Canvas, data: AutoVaktLiveData,
+        canvas: Canvas, data: AutoVaktLiveData, assignments: List<String?>,
         x0: Float, y0: Float, x1: Float, y1: Float
     ) {
-        val defaultSlots = listOf("SOC", "PWR", "SPEED", "BATT_T_MAX")
-        val slots = GaugeSlotResolver.resolve(data, defaultSlots, data.vehicleProfile, vehicleLayoutManager)
+        val effectiveSlots = assignments.takeIf { it.any { s -> s != null } }
+            ?: listOf("SOC", "PWR", "SPEED", "BATT_T_MAX")
+        val slots = GaugeSlotResolver.resolve(data, effectiveSlots, data.vehicleProfile, vehicleLayoutManager)
 
         val pad = 8f
         val cellW = (x1 - x0 - pad * 3f) / 2f
