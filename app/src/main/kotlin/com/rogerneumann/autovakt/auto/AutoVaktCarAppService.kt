@@ -8,6 +8,8 @@ import androidx.car.app.validation.HostValidator
 import com.rogerneumann.autovakt.BuildConfig
 import com.rogerneumann.autovakt.auto.screens.DashboardScreen
 import com.rogerneumann.autovakt.data.OBD2Repository
+import com.rogerneumann.autovakt.data.TripRepository
+import com.rogerneumann.autovakt.media.MediaRemoteManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -15,6 +17,8 @@ import javax.inject.Inject
 class AutoVaktCarAppService : CarAppService() {
 
     @Inject lateinit var repository: OBD2Repository
+    @Inject lateinit var mediaRemoteManager: MediaRemoteManager
+    @Inject lateinit var tripRepository: TripRepository
 
     override fun createHostValidator(): HostValidator {
         return if (BuildConfig.DEBUG) {
@@ -27,14 +31,16 @@ class AutoVaktCarAppService : CarAppService() {
     }
 
     override fun onCreateSession(): Session {
-        return AutoVaktSession(repository)
+        return AutoVaktSession(repository, mediaRemoteManager, tripRepository)
     }
 }
 
 class AutoVaktSession(
-    private val repository: OBD2Repository
+    private val repository: OBD2Repository,
+    private val mediaRemoteManager: MediaRemoteManager,
+    private val tripRepository: TripRepository
 ) : Session() {
     override fun onCreateScreen(intent: Intent): Screen {
-        return DashboardScreen(carContext, repository)
+        return DashboardScreen(carContext, repository, mediaRemoteManager, tripRepository)
     }
 }

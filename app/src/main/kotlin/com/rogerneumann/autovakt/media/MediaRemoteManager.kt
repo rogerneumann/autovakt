@@ -1,7 +1,9 @@
 package com.rogerneumann.autovakt.media
 
+import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.media.AudioManager
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
@@ -56,6 +58,38 @@ class MediaRemoteManager @Inject constructor(
             currentSongTitle = state.title.ifBlank { null },
             currentSongArtist = state.artist.ifBlank { null },
             activeMediaAppPackage = state.packageName
+        )
+    }
+
+    /**
+     * Launches the active media app's own UI. Uses the session's PendingIntent
+     * (works from background contexts on Android 10+). Falls back to package launch.
+     */
+    fun launchActiveMediaApp() {
+        val msm = context.getSystemService(Context.MEDIA_SESSION_SERVICE) as? MediaSessionManager
+        val cn = ComponentName(context, AutoVaktNotificationListener::class.java)
+        val controller = try {
+            msm?.getActiveSessions(cn)?.firstOrNull {
+                it.playbackState?.state == PlaybackState.STATE_PLAYING
+            } ?: msm?.getActiveSessions(cn)?.firstOrNull()
+        } catch (_: SecurityException) { null }
+
+        controller?.sessionActivity?.let {
+            try { it.send(); return } catch (_: PendingIntent.CanceledException) { }
+        }
+
+        val pkg = _mediaState.value.packageName
+        if (pkg.isNotBlank()) {
+            context.packageManager.getLaunchIntentForPackage(pkg)
+                ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                ?.let { context.startActivity(it); return }
+        }
+
+        // Last resort: open whatever the system considers the default music app
+        context.startActivity(
+            Intent(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_APP_MUSIC)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
     }
 

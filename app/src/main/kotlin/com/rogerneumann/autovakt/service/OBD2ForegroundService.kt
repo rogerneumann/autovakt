@@ -10,6 +10,7 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import com.rogerneumann.autovakt.abrp.AbrpReporter
 import com.rogerneumann.autovakt.data.OBD2Repository
 import com.rogerneumann.autovakt.obd2.TransportDelegate
 import com.rogerneumann.autovakt.ui.scan.DeviceType
@@ -29,6 +30,7 @@ import javax.inject.Inject
 class OBD2ForegroundService : Service() {
 
     @Inject lateinit var repository: OBD2Repository
+    @Inject lateinit var abrpReporter: AbrpReporter
     @Inject lateinit var bridgeServer: com.rogerneumann.autovakt.obd2.AutoVaktBridgeServer
     @Inject lateinit var sharedPreferences: SharedPreferences
     @Inject lateinit var transportDelegate: TransportDelegate
@@ -70,6 +72,9 @@ class OBD2ForegroundService : Service() {
         } else {
             serviceScope.launch { repository.start(useDemoMode = true) }
         }
+
+        // Start ABRP live telemetry reporting
+        abrpReporter.startReporting(serviceScope, repository.liveData)
 
         // Start the TCP bridge for 3rd party apps
         bridgeServer.start()

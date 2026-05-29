@@ -69,6 +69,11 @@ android {
         viewBinding true
         buildConfig true
     }
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
 
     applicationVariants.all { variant ->
         variant.outputs.all {
@@ -129,6 +134,27 @@ task bundlePlayStore(dependsOn: 'bundleRelease') {
     }
 }
 
+// ── Mock ABRP server (local integration testing) ─────────────────────────────
+// Usage: .\gradlew.bat runMockAbrpServer
+// Requires the jar to be compiled first via: .\tools\run-mock-abrp.ps1
+task runMockAbrpServer(type: JavaExec) {
+    group = 'tools'
+    description = 'Runs the local mock ABRP server for integration testing. Open http://localhost:8088 in a browser.'
+    doFirst {
+        def jar = file("${rootDir}/tools/mock-abrp-server.jar")
+        if (!jar.exists()) {
+            throw new GradleException(
+                "Mock server jar not found. Compile it first:\n" +
+                "  .\\tools\\run-mock-abrp.ps1\n" +
+                "Or manually:\n" +
+                "  kotlinc tools/MockAbrpServer.kt -include-runtime -d tools/mock-abrp-server.jar"
+            )
+        }
+        classpath = files(jar)
+        mainClass = 'MockAbrpServerKt'
+    }
+}
+
 dependencies {
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
@@ -163,6 +189,9 @@ dependencies {
     testImplementation 'io.mockk:mockk:1.13.8'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3'
     testImplementation 'app.cash.turbine:turbine:1.0.0'
+    testImplementation "androidx.car.app:app-testing:1.4.0"
+    testImplementation 'org.robolectric:robolectric:4.11.1'
+    testImplementation 'androidx.test:core:1.5.0'
     
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'

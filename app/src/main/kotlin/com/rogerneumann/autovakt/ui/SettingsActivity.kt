@@ -35,6 +35,7 @@ import com.rogerneumann.autovakt.data.VehicleLayoutManager
 import com.rogerneumann.autovakt.data.VehicleProfileHub
 import com.rogerneumann.autovakt.data.VehicleProfileManager
 import com.rogerneumann.autovakt.BuildConfig
+import com.rogerneumann.autovakt.abrp.AbrpReporter
 import com.rogerneumann.autovakt.databinding.ActivitySettingsBinding
 import com.rogerneumann.autovakt.obd2.AutoVaktBridgeServer
 import com.rogerneumann.autovakt.util.LogShareManager
@@ -52,6 +53,7 @@ class SettingsActivity : AppCompatActivity() {
     @Inject lateinit var lightingManager: LightingManager
     @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
     @Inject lateinit var bridgeServer: AutoVaktBridgeServer
+    @Inject lateinit var abrpReporter: AbrpReporter
     @Inject lateinit var sharedPreferences: SharedPreferences
     @Inject lateinit var logShareManager: LogShareManager
 
@@ -87,6 +89,7 @@ class SettingsActivity : AppCompatActivity() {
         setupThemeSection()
         setupDashboardLayoutSection()
         setupBridgeSection()
+        setupAbrpSection()
         setupImportButton()
         setupShareLogsButton()
         setupCloseButton()
@@ -712,6 +715,47 @@ class SettingsActivity : AppCompatActivity() {
                 else
                     "Waiting for connection"
             }
+        }
+    }
+
+    // ── ABRP section ──────────────────────────────────────────────────────────
+
+    private fun setupAbrpSection() {
+        // Restore saved values
+        binding.etAbrpToken.setText(abrpReporter.getToken())
+        binding.etAbrpBaseUrl.setText(abrpReporter.getBaseUrl())
+
+        // Update status indicator
+        fun refreshAbrpStatus() {
+            binding.tvAbrpStatus.text = if (abrpReporter.getToken().isNotBlank()) "Sending" else "Not configured"
+        }
+        refreshAbrpStatus()
+
+        // Token: save on every character change
+        binding.etAbrpToken.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                abrpReporter.setToken(s?.toString()?.trim() ?: "")
+                refreshAbrpStatus()
+            }
+        })
+
+        // Base URL: save on change
+        binding.etAbrpBaseUrl.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                val url = s?.toString()?.trim() ?: ""
+                if (url.isNotBlank()) abrpReporter.setBaseUrl(url)
+            }
+        })
+
+        // Advanced accordion
+        binding.tvAbrpAdvancedTrigger.setOnClickListener {
+            val isVisible = binding.layoutAbrpAdvanced.visibility == View.VISIBLE
+            binding.layoutAbrpAdvanced.visibility = if (isVisible) View.GONE else View.VISIBLE
+            binding.tvAbrpAdvancedTrigger.text = if (isVisible) "Advanced ▼" else "Advanced ▲"
         }
     }
 

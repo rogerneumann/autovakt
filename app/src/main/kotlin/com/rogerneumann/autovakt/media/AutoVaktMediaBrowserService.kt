@@ -1,6 +1,5 @@
 package com.rogerneumann.autovakt.media
 
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -99,12 +98,7 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
                             }
                         }
                         "OPEN_MUSIC_APP" -> {
-                            val pkg = repository.liveData.value.activeMediaAppPackage
-                            if (!pkg.isNullOrBlank()) {
-                                packageManager.getLaunchIntentForPackage(pkg)
-                                    ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    ?.let { startActivity(it) }
-                            }
+                            mediaRemoteManager.launchActiveMediaApp()
                         }
                     }
                 }

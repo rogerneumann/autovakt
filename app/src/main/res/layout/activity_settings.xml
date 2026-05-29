@@ -736,6 +736,103 @@
                 app:trackColorInactive="#3A3A3A" />
         </LinearLayout>
 
+        <!-- ── ABRP Live Data ─────────────────────────────────────────────────── -->
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="#2A2A2A" android:layout_marginBottom="24dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ABRP Live Data"
+            android:textColor="#B0BEC5"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
+            android:layout_marginBottom="24dp">
+
+            <!-- Status -->
+            <TextView
+                android:id="@+id/tvAbrpStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Not configured"
+                android:textColor="#B0BEC5"
+                android:textSize="13sp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Token input -->
+            <EditText
+                android:id="@+id/etAbrpToken"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:hint="Paste token from ABRP app"
+                android:inputType="textNoSuggestions"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#666666"
+                android:backgroundTint="#555555"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Get token: ABRP app -> Car Settings -> Live Data -> Generic -> Link"
+                android:textColor="#888888"
+                android:textSize="12sp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Advanced (base URL) accordion -->
+            <TextView
+                android:id="@+id/tvAbrpAdvancedTrigger"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Advanced ▼"
+                android:textColor="#B0BEC5"
+                android:textSize="13sp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:layout_marginBottom="4dp" />
+
+            <LinearLayout
+                android:id="@+id/layoutAbrpAdvanced"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#2A2A2A"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Server URL"
+                    android:textColor="#B0BEC5"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/etAbrpBaseUrl"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:hint="https://api.iternio.com/1/tlm/send"
+                    android:inputType="textNoSuggestions|textUri"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#666666"
+                    android:backgroundTint="#555555" />
+            </LinearLayout>
+
+        </LinearLayout>
+
         <!-- ──────────────────────────────────────────────────────────────── -->
 
         <Button
