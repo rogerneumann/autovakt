@@ -53,7 +53,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -113,6 +114,19 @@ task publishRelease(dependsOn: 'assembleDebug') {
 
 afterEvaluate {
     assembleDebug.finalizedBy publishRelease
+}
+
+// ── Play Store AAB builder ────────────────────────────────────────────────────
+// Produces the signed release bundle for Play Store upload.
+// Usage: ./gradlew bundlePlayStore
+// The AAB is written to: app/build/outputs/bundle/release/app-release.aab
+task bundlePlayStore(dependsOn: 'bundleRelease') {
+    group = 'publishing'
+    description = 'Builds release AAB for Play Store upload (does not publish).'
+    doLast {
+        def aab = "${buildDir}/outputs/bundle/release/app-release.aab"
+        println "Play Store AAB ready: ${aab}"
+    }
 }
 
 dependencies {
