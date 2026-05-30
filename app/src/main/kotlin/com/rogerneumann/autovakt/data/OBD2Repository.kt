@@ -89,6 +89,13 @@ class OBD2Repository @Inject constructor(
         pollingJob?.cancel()
         pollingJob = null
         transport.disconnect()
+        // Reset live data so the UI transitions to Disconnected immediately and
+        // all stale gauge values are cleared rather than frozen on screen.
+        _liveData.value = AutoVaktLiveData()
+        accumulatedEnergyKwh = 0f
+        accumulatedDistanceMiles = 0f
+        accumulatedFuelGallons = 0f
+        efficiencySamples.clear()
     }
 
     private suspend fun runLiveLoop() {

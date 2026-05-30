@@ -61,8 +61,14 @@ class AbrpReporter @Inject constructor(
 
     suspend fun send(data: AutoVaktLiveData) {
         val token = getToken()
-        if (token.isBlank()) return
-        val soc = data.soc ?: return
+        if (token.isBlank()) {
+            Log.d(TAG, "skip — no token configured")
+            return
+        }
+        val soc = data.soc ?: run {
+            Log.d(TAG, "skip — SOC is null (state=${data.connectionState})")
+            return
+        }
 
         val speedKmh = (data.speedMph ?: 0f) * 1.60934f
         val powerKw = data.powerKw ?: 0f
