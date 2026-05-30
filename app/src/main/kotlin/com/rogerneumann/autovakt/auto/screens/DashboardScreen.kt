@@ -71,7 +71,7 @@ class DashboardScreen(
         val apiLevel = carContext.carAppApiLevel
 
         if (apiLevel < 6) {
-            return buildGaugesTemplate(data, title = "AutoVakt (host level $apiLevel)")
+            return buildFallbackTemplate(data, apiLevel)
         }
 
         val gaugesIcon = CarIcon.Builder(
@@ -112,8 +112,9 @@ class DashboardScreen(
             .build()
     }
 
-    private fun buildGaugesTemplate(data: AutoVaktLiveData, title: String? = null): ListTemplate =
-        ListTemplate.Builder()
+    private fun buildGaugesTemplate(data: AutoVaktLiveData, title: String? = null): ListTemplate {
+        val apiLevel = carContext.carAppApiLevel
+        return ListTemplate.Builder()
             .apply { if (title != null) setTitle(title) }
             .setSingleList(ItemList.Builder()
                 .addItem(row("Battery",
@@ -132,6 +133,35 @@ class DashboardScreen(
                 .addItem(row("Temp",
                     data.battTempMaxC?.let { "%.0f°C batt".format(it) }
                         ?: data.coolantTempC?.let { "%.0f°C coolant".format(it) }))
+                .addItem(row("Host API", apiLevel.toString()))
+                .build())
+            .build()
+    }
+
+    // Shown when AA host is below Car App API level 6 (no TabTemplate support).
+    // Includes all gauge rows plus clickable navigation to Trip History.
+    private fun buildFallbackTemplate(data: AutoVaktLiveData, apiLevel: Int): ListTemplate =
+        ListTemplate.Builder()
+            .setTitle("AutoVakt · Host $apiLevel")
+            .setSingleList(ItemList.Builder()
+                .addItem(row("Battery",
+                    data.soc?.let { "%.0f%%".format(it) }))
+                .addItem(row("Power",
+                    data.powerKw?.let { "%.1f kW".format(it) }
+                        ?: data.engineLoad?.let { "%.0f%% load".format(it) }))
+                .addItem(row("Speed",
+                    data.speedMph?.let { "%.0f mph".format(it) }))
+                .addItem(row("Efficiency",
+                    data.instantMiPerKwh?.let { "%.1f mi/kWh".format(it) }
+                        ?: data.instantMpg?.let { "%.0f mpg".format(it) }))
+                .addItem(row("Temp",
+                    data.battTempMaxC?.let { "%.0f°C batt".format(it) }
+                        ?: data.coolantTempC?.let { "%.0f°C coolant".format(it) }))
+                .addItem(Row.Builder()
+                    .setTitle("Trip History")
+                    .addText("View recorded trips")
+                    .setOnClickListener { screenManager.push(TripScreen(carContext, tripRepository)) }
+                    .build())
                 .build())
             .build()
 

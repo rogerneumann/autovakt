@@ -40,6 +40,21 @@
             android:alpha="0"
             android:padding="8dp" />
 
+        <!-- Trip history FAB — bottom-right, 1-tap access to current trip + history -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabTrips"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginBottom="36dp"
+            android:layout_marginEnd="24dp"
+            android:src="@drawable/ic_history_24"
+            android:contentDescription="Trip History"
+            app:backgroundTint="#CC1C1C1E"
+            app:tint="#00E676"
+            app:fabSize="mini"
+            app:elevation="4dp" />
+
         <!-- DEMO badge — shown only in demo mode -->
         <TextView
             android:id="@+id/tvDemoBadge"
