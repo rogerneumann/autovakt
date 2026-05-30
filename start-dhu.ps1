@@ -2,7 +2,7 @@
 # Prerequisites: phone connected via USB, Android Auto developer mode enabled,
 #                "Start head unit server" tapped in Android Auto settings
 
-$dhu = "$env:LOCALAPPDATA\Android\Sdk\extras\google\auto\desktop-head-unit.exe"
+$dhu = "C:\Android\android-sdk\extras\google\auto\desktop-head-unit.exe"
 
 if (-not (Test-Path $dhu)) {
     Write-Error "DHU not found at: $dhu"
