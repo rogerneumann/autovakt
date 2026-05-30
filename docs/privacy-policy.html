@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoVakt — Privacy Policy</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.6; }
+    h1 { font-size: 1.6rem; border-bottom: 2px solid #00c853; padding-bottom: 8px; }
+    h2 { font-size: 1.1rem; margin-top: 2em; color: #00695c; }
+    p, li { font-size: 0.97rem; }
+    ul { padding-left: 1.4em; }
+    a { color: #00695c; }
+    .meta { color: #666; font-size: 0.88rem; margin-top: -8px; margin-bottom: 2em; }
+    .badge { background: #e8f5e9; border-left: 4px solid #00c853; padding: 10px 14px; border-radius: 2px; margin: 1.2em 0; }
+  </style>
+</head>
+<body>
+
+<h1>Privacy Policy — AutoVakt</h1>
+<p class="meta">Last updated: 2026-05-30 &nbsp;|&nbsp; Developer: Roger Neumann &nbsp;|&nbsp; <a href="mailto:roger.neumann@gmail.com">roger.neumann@gmail.com</a></p>
+
+<div class="badge">
+  AutoVakt does not require an account. No personal data is collected. Vehicle data stays on your device unless you explicitly enable a third-party integration.
+</div>
+
+<h2>Overview</h2>
+<p>AutoVakt is an Android app and Android Auto companion that reads vehicle data from a Bluetooth OBD2 adapter and displays it as live gauges. No account, registration, or cloud service is required to use the app.</p>
+
+<h2>Data Collected and How It Is Used</h2>
+
+<h3>Vehicle Telemetry (OBD2 Data)</h3>
+<p>AutoVakt reads the following from your vehicle via a Bluetooth OBD2 adapter:</p>
+<ul>
+  <li>Speed</li>
+  <li>State of Charge (SOC / battery level)</li>
+  <li>Battery voltage and current</li>
+  <li>Power draw (kW)</li>
+  <li>Battery temperature</li>
+  <li>Fuel level (ICE/hybrid vehicles)</li>
+</ul>
+<p>This data stays on your device by default and is never transmitted to any server unless you explicitly opt in to a third-party integration (see below).</p>
+
+<h3>Trip History</h3>
+<p>AutoVakt records trip summaries (start time, end time, distance driven, energy used, start/end SOC) to a local database on your device. This data is never uploaded or shared. It is deleted when you uninstall the app.</p>
+
+<h3>Bluetooth</h3>
+<p>AutoVakt uses Bluetooth to connect to your OBD2 adapter. The app does not scan for or collect data about other Bluetooth devices. No Bluetooth device identifiers are stored or transmitted.</p>
+
+<h3>No Account or Personal Data</h3>
+<p>AutoVakt does not collect your name, email address, location, phone number, or any other personal identifier. There is no user account system.</p>
+
+<h2>Optional Third-Party Integrations</h2>
+<p>All integrations are <strong>opt-in</strong> and require you to enter credentials in Settings. If you do not configure these, no data is sent anywhere.</p>
+
+<h3>ABRP (A Better Route Planner)</h3>
+<p>If you enter an ABRP user token in Settings, AutoVakt will periodically send live vehicle telemetry (speed, SOC, power, voltage, current, battery temperature, timestamp) to the ABRP API at <code>https://api.iternio.com/</code> to enable real-time range estimation.</p>
+<p>ABRP's privacy policy governs how they handle that data: <a href="https://abetterrouteplanner.com/privacy">abetterrouteplanner.com/privacy</a></p>
+<p>You can disable this at any time by clearing the ABRP token in Settings.</p>
+
+<h3>Car Scanner, Torque Pro, and Other OBD2 Apps</h3>
+<p>AutoVakt can act as a local data bridge, allowing other apps on your device (such as Car Scanner ELV/OBD2 or Torque Pro) to receive live vehicle data over a local network socket. This bridge is off by default and only active when you enable it in Settings. Data transmitted via this bridge stays on your local network and is not sent to the internet by AutoVakt.</p>
+
+<h2>Data Retention</h2>
+<ul>
+  <li><strong>Trip history:</strong> Stored locally on your device until you delete trips in the app or uninstall the app.</li>
+  <li><strong>Settings:</strong> Stored in Android SharedPreferences on your device. Cleared on uninstall.</li>
+  <li><strong>No server-side retention:</strong> AutoVakt operates no servers and retains no data externally.</li>
+</ul>
+
+<h2>Children's Privacy</h2>
+<p>AutoVakt is not directed at children under 13. We do not knowingly collect any data from children.</p>
+
+<h2>Changes to This Policy</h2>
+<p>If the privacy practices of this app change materially, this document will be updated and the "Last updated" date revised.</p>
+
+<h2>Contact</h2>
+<p><a href="mailto:roger.neumann@gmail.com">roger.neumann@gmail.com</a></p>
+
+</body>
+</html>
