@@ -44,7 +44,10 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import android.Manifest
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.os.BatteryManager
+import android.view.WindowManager
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -116,6 +119,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        applyScreenWakeSetting()
         showSwipeHintIfNeeded()
         val hasPairedDevice = sharedPreferences.getString("saved_device_address", null) != null
         if (hasPairedDevice) {
@@ -474,6 +478,27 @@ class MainActivity : AppCompatActivity() {
         hamburgerDotView = null
         hamburgerPulseAnimator?.cancel()
         hamburgerPulseAnimator = null
+    }
+
+    private fun applyScreenWakeSetting() {
+        val mode = sharedPreferences.getString("screen_wake_mode", "off")
+        val keepOn = when (mode) {
+            "always"   -> true
+            "charging" -> isCharging()
+            else       -> false
+        }
+        if (keepOn) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
+    private fun isCharging(): Boolean {
+        val intent = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return false
+        val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+        return status == BatteryManager.BATTERY_STATUS_CHARGING ||
+               status == BatteryManager.BATTERY_STATUS_FULL
     }
 
     private fun dpToPx(dp: Int): Int =

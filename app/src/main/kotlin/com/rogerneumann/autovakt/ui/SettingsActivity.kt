@@ -35,6 +35,7 @@ import com.rogerneumann.autovakt.data.VehicleLayoutManager
 import com.rogerneumann.autovakt.data.VehicleProfileHub
 import com.rogerneumann.autovakt.data.VehicleProfileManager
 import com.rogerneumann.autovakt.BuildConfig
+import com.rogerneumann.autovakt.R
 import com.rogerneumann.autovakt.abrp.AbrpReporter
 import com.rogerneumann.autovakt.databinding.ActivitySettingsBinding
 import com.rogerneumann.autovakt.obd2.AutoVaktBridgeServer
@@ -90,6 +91,8 @@ class SettingsActivity : AppCompatActivity() {
         setupDashboardLayoutSection()
         setupBridgeSection()
         setupAbrpSection()
+        setupScreenWakeSection()
+        setupDiagnosticsSection()
         setupImportButton()
         setupShareLogsButton()
         setupCloseButton()
@@ -756,6 +759,61 @@ class SettingsActivity : AppCompatActivity() {
             val isVisible = binding.layoutAbrpAdvanced.visibility == View.VISIBLE
             binding.layoutAbrpAdvanced.visibility = if (isVisible) View.GONE else View.VISIBLE
             binding.tvAbrpAdvancedTrigger.text = if (isVisible) "Advanced ▼" else "Advanced ▲"
+        }
+    }
+
+    // ── Screen Wake Lock ──────────────────────────────────────────────────────
+
+    private fun setupScreenWakeSection() {
+        when (sharedPreferences.getString("screen_wake_mode", "off")) {
+            "always"   -> binding.radioScreenAlways.isChecked = true
+            "charging" -> binding.radioScreenCharging.isChecked = true
+            else       -> binding.radioScreenOff.isChecked = true
+        }
+        binding.radioGroupScreenWake.setOnCheckedChangeListener { _, checkedId ->
+            val mode = when (checkedId) {
+                R.id.radioScreenAlways   -> "always"
+                R.id.radioScreenCharging -> "charging"
+                else                     -> "off"
+            }
+            sharedPreferences.edit().putString("screen_wake_mode", mode).apply()
+        }
+    }
+
+    // ── Diagnostics ───────────────────────────────────────────────────────────
+
+    private fun setupDiagnosticsSection() {
+        lifecycleScope.launch {
+            abrpReporter.status.collect { s ->
+                binding.tvDiagAbrp.text = buildAbrpDiagText(s)
+            }
+        }
+        lifecycleScope.launch {
+            bridgeServer.activeClientCount.collect { count ->
+                binding.tvDiagBridge.text = if (count > 0)
+                    "Bridge: $count client(s) connected"
+                else
+                    "Bridge: no clients"
+            }
+        }
+    }
+
+    private fun buildAbrpDiagText(s: com.rogerneumann.autovakt.abrp.AbrpSendStatus): String {
+        if (abrpReporter.getToken().isBlank()) return "ABRP: no token configured"
+        val lastSent = s.lastSentMs?.let { ms ->
+            val ago = (System.currentTimeMillis() - ms) / 1000
+            when {
+                ago < 10  -> "just now"
+                ago < 60  -> "${ago}s ago"
+                else      -> "${ago / 60}m ago"
+            }
+        }
+        val err = s.lastError
+        return buildString {
+            append("ABRP: ")
+            if (lastSent != null) append("last sent $lastSent · ${s.sentCount} sends")
+            else append("token set — waiting for connection")
+            if (err != null) append("\n  last error: $err")
         }
     }
 

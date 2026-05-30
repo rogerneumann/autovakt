@@ -9,7 +9,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -27,6 +29,13 @@ private const val KEY_BASE_URL = "abrp_base_url"
 private const val DEFAULT_BASE_URL = "https://api.iternio.com/1/tlm/send"
 private const val SEND_INTERVAL_MS = 5000L
 
+data class AbrpSendStatus(
+    val sentCount: Int = 0,
+    val lastSentMs: Long? = null,
+    val lastError: String? = null,
+    val lastErrorMs: Long? = null
+)
+
 @Singleton
 class AbrpReporter @Inject constructor(
     @ApplicationContext private val context: Context
@@ -35,6 +44,9 @@ class AbrpReporter @Inject constructor(
     private val prefs by lazy { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
 
     private var reportingJob: Job? = null
+
+    private val _status = MutableStateFlow(AbrpSendStatus())
+    val status: StateFlow<AbrpSendStatus> = _status.asStateFlow()
 
     // ── Token ────────────────────────────────────────────────────────────────
 
@@ -108,13 +120,22 @@ class AbrpReporter @Inject constructor(
 
                 val responseCode = conn.responseCode
                 if (responseCode != HttpURLConnection.HTTP_OK) {
-                    Log.w(TAG, "Unexpected response: HTTP $responseCode")
+                    val msg = "HTTP $responseCode"
+                    Log.w(TAG, "Unexpected response: $msg")
+                    _status.value = _status.value.copy(lastError = msg, lastErrorMs = System.currentTimeMillis())
                 } else {
-                    Log.d(TAG, "ABRP send OK (soc=%.1f, speed=%.1f km/h, is_charging=$isCharging)".format(soc, speedKmh))
+                    Log.d(TAG, "send OK — soc=%.1f, speed=%.1f km/h, is_charging=$isCharging".format(soc, speedKmh))
+                    _status.value = _status.value.copy(
+                        sentCount = _status.value.sentCount + 1,
+                        lastSentMs = System.currentTimeMillis(),
+                        lastError = null
+                    )
                 }
                 conn.disconnect()
             } catch (e: Exception) {
-                Log.w(TAG, "ABRP send failed: ${e.message}")
+                val msg = e.message ?: "unknown error"
+                Log.w(TAG, "send failed: $msg")
+                _status.value = _status.value.copy(lastError = msg, lastErrorMs = System.currentTimeMillis())
             }
         }
     }

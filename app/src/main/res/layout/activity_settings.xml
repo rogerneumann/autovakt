@@ -833,6 +833,58 @@
 
         </LinearLayout>
 
+        <!-- ── Screen Wake Lock ───────────────────────────────────────────────── -->
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="#2A2A2A" android:layout_marginBottom="24dp" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Keep Screen On"
+            android:textColor="#B0BEC5" android:layout_marginBottom="12dp" />
+
+        <RadioGroup android:id="@+id/radioGroupScreenWake"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:layout_marginBottom="24dp">
+            <RadioButton android:id="@+id/radioScreenOff"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="System default (screen times out)"
+                android:textColor="#FFFFFF" android:checked="true" />
+            <RadioButton android:id="@+id/radioScreenAlways"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Always on while app is open"
+                android:textColor="#FFFFFF" />
+            <RadioButton android:id="@+id/radioScreenCharging"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="On when charging / plugged in"
+                android:textColor="#FFFFFF" />
+        </RadioGroup>
+
+        <!-- ── Diagnostics ────────────────────────────────────────────────────── -->
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="#2A2A2A" android:layout_marginBottom="24dp" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Diagnostics"
+            android:textColor="#B0BEC5" android:layout_marginBottom="12dp" />
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:background="#1E1E1E"
+            android:paddingStart="16dp" android:paddingEnd="16dp"
+            android:paddingTop="16dp" android:paddingBottom="16dp"
+            android:layout_marginBottom="24dp">
+
+            <TextView android:id="@+id/tvDiagAbrp"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="ABRP: not configured"
+                android:textColor="#B0BEC5" android:textSize="13sp"
+                android:fontFamily="monospace" android:layout_marginBottom="8dp" />
+
+            <TextView android:id="@+id/tvDiagBridge"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="Bridge: no clients"
+                android:textColor="#B0BEC5" android:textSize="13sp"
+                android:fontFamily="monospace" />
+        </LinearLayout>
+
         <!-- ──────────────────────────────────────────────────────────────── -->
 
         <Button
