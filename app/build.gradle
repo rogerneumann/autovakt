@@ -37,22 +37,40 @@ if (isBuilding) {
 def buildDate = "${todayStr}.${buildIteration}"              // e.g. "20260516.1"
 def buildCode = todayStr.toInteger() * 100 + buildIteration  // e.g. 2026051601 (< 2.1B limit)
 
+def keystorePropsFile = rootProject.file("keystore.properties")
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+
 android {
     namespace 'com.rogerneumann.autovakt'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.rogerneumann.autovakt"
         minSdk 26
-        targetSdk 35
+        targetSdk 36
         versionCode buildCode
         versionName buildDate
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        release {
+            if (keystoreProps.storeFile) {
+                storeFile file(keystoreProps.storeFile)
+                storePassword keystoreProps.storePassword
+                keyAlias keystoreProps.keyAlias
+                keyPassword keystoreProps.keyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
