@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
@@ -23,6 +24,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -49,6 +51,9 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
 
     private var mediaSession: MediaSessionCompat? = null
     private val rootId = "autovakt_root"
+
+    // Latest telemetry snapshot — used by onLoadChildren to render album art
+    private var currentData = AutoVaktLiveData()
 
     // 800×480 landscape canvas — standard AA mini-player size
     private val bitmapW = 800
@@ -136,14 +141,25 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
 
         sessionToken = mediaSession?.sessionToken
 
-        // Re-render whenever telemetry, display mode, or media metadata changes
+        // Re-render Now Playing bitmap whenever telemetry, display mode, or media metadata changes
         serviceScope.launch {
             combine(
                 repository.liveData,
                 AutoVaktDisplayState.displayMode,
                 mediaRemoteManager.currentMetadata
             ) { data, mode, _ -> Pair(data, mode) }
-                .collectLatest { (data, mode) -> updateBitmap(data, mode) }
+                .collectLatest { (data, mode) ->
+                    currentData = data
+                    updateBitmap(data, mode)
+                }
+        }
+
+        // Refresh browse album art every 2 seconds so the data grid cards stay live
+        serviceScope.launch {
+            while (true) {
+                delay(2000)
+                notifyChildrenChanged(rootId)
+            }
         }
     }
 
@@ -371,18 +387,56 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
         clientUid: Int,
         rootHints: Bundle?
     ): BrowserRoot {
-        return BrowserRoot(rootId, null)
+        // Hint AA to render browse items as a grid (like album art cards)
+        val extras = Bundle().apply {
+            putInt("android.media.browse.CONTENT_STYLE_BROWSABLE_HINT", 2)
+            putInt("android.media.browse.CONTENT_STYLE_PLAYABLE_HINT", 2)
+        }
+        return BrowserRoot(rootId, extras)
     }
 
     override fun onLoadChildren(
         parentId: String,
         result: Result<MutableList<MediaBrowserCompat.MediaItem>>
     ) {
-        result.sendResult(mutableListOf())
+        result.sendResult(buildDataAlbums(currentData))
     }
 
     override fun onLoadItem(itemId: String?, result: Result<MediaBrowserCompat.MediaItem?>) {
         result.sendResult(null)
+    }
+
+    // ── Data album helpers ────────────────────────────────────────────────────
+
+    private fun buildDataAlbums(data: AutoVaktLiveData): MutableList<MediaBrowserCompat.MediaItem> {
+        val configSlots = vehicleLayoutManager.getSlotAssignments(repository.currentLayoutKey.value)
+        return mutableListOf(
+            buildAlbumItem("album_dashboard", "Dashboard", configSlots, data),
+            buildAlbumItem("album_battery",   "Battery",
+                listOf("SOC", "HV_V", "BATT_T_MAX", "BATT_T_MIN"), data),
+            buildAlbumItem("album_efficiency", "Efficiency",
+                listOf("instantMiPerKwh", "averageMiPerKwh", "instantMpg", "averageMpg"), data),
+        )
+    }
+
+    private fun buildAlbumItem(
+        id: String, name: String, slots: List<String?>, data: AutoVaktLiveData
+    ): MediaBrowserCompat.MediaItem {
+        val bitmap = renderAlbumBitmap(data, slots)
+        val desc = MediaDescriptionCompat.Builder()
+            .setMediaId(id)
+            .setTitle(name)
+            .setIconBitmap(bitmap)
+            .build()
+        return MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE)
+    }
+
+    private fun renderAlbumBitmap(data: AutoVaktLiveData, slots: List<String?>): Bitmap {
+        val bmp = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bmp)
+        canvas.drawColor(Color.parseColor("#121212"))
+        drawTelemetryGrid(canvas, data, slots, 0f, 0f, 512f, 512f)
+        return bmp
     }
 
     override fun onDestroy() {
