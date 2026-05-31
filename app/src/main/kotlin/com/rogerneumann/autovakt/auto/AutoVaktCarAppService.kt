@@ -9,6 +9,7 @@ import com.rogerneumann.autovakt.BuildConfig
 import com.rogerneumann.autovakt.auto.screens.DashboardScreen
 import com.rogerneumann.autovakt.data.OBD2Repository
 import com.rogerneumann.autovakt.data.TripRepository
+import com.rogerneumann.autovakt.data.VehicleLayoutManager
 import com.rogerneumann.autovakt.media.MediaRemoteManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -19,6 +20,7 @@ class AutoVaktCarAppService : CarAppService() {
     @Inject lateinit var repository: OBD2Repository
     @Inject lateinit var mediaRemoteManager: MediaRemoteManager
     @Inject lateinit var tripRepository: TripRepository
+    @Inject lateinit var vehicleLayoutManager: VehicleLayoutManager
 
     override fun createHostValidator(): HostValidator {
         return if (BuildConfig.DEBUG) {
@@ -31,16 +33,17 @@ class AutoVaktCarAppService : CarAppService() {
     }
 
     override fun onCreateSession(): Session {
-        return AutoVaktSession(repository, mediaRemoteManager, tripRepository)
+        return AutoVaktSession(repository, mediaRemoteManager, tripRepository, vehicleLayoutManager)
     }
 }
 
 class AutoVaktSession(
     private val repository: OBD2Repository,
     private val mediaRemoteManager: MediaRemoteManager,
-    private val tripRepository: TripRepository
+    private val tripRepository: TripRepository,
+    private val vehicleLayoutManager: VehicleLayoutManager
 ) : Session() {
     override fun onCreateScreen(intent: Intent): Screen {
-        return DashboardScreen(carContext, repository, mediaRemoteManager, tripRepository)
+        return DashboardScreen(carContext, repository, mediaRemoteManager, tripRepository, vehicleLayoutManager)
     }
 }

@@ -16,9 +16,11 @@ import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.lifecycleScope
 import com.rogerneumann.autovakt.R
+import com.rogerneumann.autovakt.auto.render.GaugeSlotResolver
 import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.data.OBD2Repository
 import com.rogerneumann.autovakt.data.TripRepository
+import com.rogerneumann.autovakt.data.VehicleLayoutManager
 import com.rogerneumann.autovakt.db.TripEntity
 import com.rogerneumann.autovakt.media.MediaRemoteManager
 import kotlinx.coroutines.flow.collectLatest
@@ -32,12 +34,14 @@ class DashboardScreen(
     carContext: CarContext,
     private val repository: OBD2Repository,
     private val mediaRemoteManager: MediaRemoteManager,
-    private val tripRepository: TripRepository
+    private val tripRepository: TripRepository,
+    private val vehicleLayoutManager: VehicleLayoutManager
 ) : Screen(carContext) {
 
     private var lastData: AutoVaktLiveData = AutoVaktLiveData()
     private var lastTrips: List<TripEntity> = emptyList()
     private var activeTabId = "gauges"
+    private var lastLayoutKey: String = "gauge_layout_global"
 
     private val tabCallback = object : TabTemplate.TabCallback {
         override fun onTabSelected(contentId: String) {
@@ -60,6 +64,12 @@ class DashboardScreen(
         lifecycleScope.launch {
             tripRepository.getAllTrips().collectLatest { trips ->
                 lastTrips = trips.take(5)
+                invalidate()
+            }
+        }
+        lifecycleScope.launch {
+            repository.currentLayoutKey.collectLatest { key ->
+                lastLayoutKey = key
                 invalidate()
             }
         }
@@ -112,71 +122,56 @@ class DashboardScreen(
             .build()
     }
 
-    private fun buildGaugesTemplate(data: AutoVaktLiveData, title: String? = null): ListTemplate {
-        val apiLevel = carContext.carAppApiLevel
+    private fun buildGaugesTemplate(data: AutoVaktLiveData): ListTemplate {
+        val assignments = vehicleLayoutManager.getSlotAssignments(lastLayoutKey)
+        val slots = GaugeSlotResolver.resolve(data, assignments, data.vehicleProfile, vehicleLayoutManager)
+        val itemList = ItemList.Builder()
+        slots.filter { it.value != "--" }.forEach { slot ->
+            itemList.addItem(row(slot.label, "${slot.value} ${slot.unit}".trim()))
+        }
+        itemList.addItem(row("Host API", carContext.carAppApiLevel.toString()))
         return ListTemplate.Builder()
-            .apply { if (title != null) setTitle(title) }
-            .setSingleList(ItemList.Builder()
-                .addItem(row("Battery",
-                    data.soc?.let { "%.0f%%".format(it) }))
-                .addItem(row("Power",
-                    data.powerKw?.let { "%.1f kW".format(it) }
-                        ?: data.engineLoad?.let { "%.0f%% load".format(it) }))
-                .addItem(row("Speed",
-                    data.speedMph?.let { "%.0f mph".format(it) }))
-                .addItem(row("Efficiency",
-                    data.instantMiPerKwh?.let { "%.1f mi/kWh".format(it) }
-                        ?: data.instantMpg?.let { "%.0f mpg".format(it) }))
-                .addItem(row("Avg Efficiency",
-                    data.averageMiPerKwh?.let { "%.1f mi/kWh".format(it) }
-                        ?: data.averageMpg?.let { "%.0f mpg".format(it) }))
-                .addItem(row("Temp",
-                    data.battTempMaxC?.let { "%.0f°C batt".format(it) }
-                        ?: data.coolantTempC?.let { "%.0f°C coolant".format(it) }))
-                .addItem(row("Host API", apiLevel.toString()))
-                .build())
+            .setSingleList(itemList.build())
             .build()
     }
 
     // Shown when AA host is below Car App API level 6 (no TabTemplate support).
-    // PaneTemplate supports actions at all API levels and shows gauge rows + media switch.
+    // Rows mirror the phone dashboard slot configuration — same metrics, same order.
     private fun buildFallbackTemplate(data: AutoVaktLiveData, apiLevel: Int): PaneTemplate {
-        val socStr   = data.soc?.let { "%.0f%%".format(it) } ?: "--"
-        val powerStr = data.powerKw?.let { "%.1f kW".format(it) }
-                       ?: data.engineLoad?.let { "%.0f%% load".format(it) } ?: "--"
-        val speedStr = data.speedMph?.let { "%.0f mph".format(it) } ?: "--"
-        val effStr   = data.instantMiPerKwh?.let { "%.1f mi/kWh".format(it) }
-                       ?: data.instantMpg?.let { "%.0f mpg".format(it) } ?: "--"
-        val avgStr   = data.averageMiPerKwh?.let { "%.1f mi/kWh".format(it) }
-                       ?: data.averageMpg?.let { "%.0f mpg".format(it) } ?: "--"
-        val tempStr  = data.battTempMaxC?.let { "%.0f°C batt".format(it) }
-                       ?: data.coolantTempC?.let { "%.0f°C coolant".format(it) } ?: "--"
+        val assignments = vehicleLayoutManager.getSlotAssignments(lastLayoutKey)
+        val slots = GaugeSlotResolver.resolve(data, assignments, data.vehicleProfile, vehicleLayoutManager)
 
         val mediaStr = mediaRemoteManager.currentMetadata.value.let { (title, artist) ->
             when {
                 title.isNotBlank() && artist.isNotBlank() -> "$title · $artist"
                 title.isNotBlank() -> title
-                else -> "No media playing"
+                else -> "No media"
             }
         }
 
         val pane = Pane.Builder()
-            .addRow(Row.Builder().setTitle("$socStr  ·  $powerStr  ·  $speedStr").addText("SOC · Power · Speed").build())
-            .addRow(Row.Builder().setTitle("Inst $effStr  ·  Avg $avgStr").addText("Efficiency").build())
-            .addRow(Row.Builder().setTitle(tempStr).addText("Temperature").build())
-            .addRow(Row.Builder().setTitle(mediaStr).addText("Now Playing")
-                .setOnClickListener { mediaRemoteManager.launchActiveMediaApp() }.build())
-            .addRow(Row.Builder().setTitle("Trip History")
-                .addText("View recorded trips")
-                .setOnClickListener { screenManager.push(TripScreen(carContext, tripRepository)) }
+        slots.filter { it.value != "--" }.forEach { slot ->
+            pane.addRow(Row.Builder()
+                .setTitle("${slot.value} ${slot.unit}".trim())
+                .addText(slot.label)
                 .build())
-            .addAction(Action.Builder()
-                .setTitle("Music")
-                .setOnClickListener { mediaRemoteManager.launchActiveMediaApp() }
-                .build())
-            .build()
+        }
+        pane.addRow(Row.Builder()
+            .setTitle(mediaStr)
+            .addText("Now Playing")
+            .setOnClickListener { mediaRemoteManager.launchActiveMediaApp() }
+            .build())
+        pane.addRow(Row.Builder()
+            .setTitle("Trip History")
+            .addText("View recorded trips")
+            .setOnClickListener { screenManager.push(TripScreen(carContext, tripRepository)) }
+            .build())
+        pane.addAction(Action.Builder()
+            .setTitle("Music")
+            .setOnClickListener { mediaRemoteManager.launchActiveMediaApp() }
+            .build())
 
-        return PaneTemplate.Builder(pane)
+        return PaneTemplate.Builder(pane.build())
             .setTitle("AutoVakt")
             .setHeaderAction(Action.APP_ICON)
             .build()
