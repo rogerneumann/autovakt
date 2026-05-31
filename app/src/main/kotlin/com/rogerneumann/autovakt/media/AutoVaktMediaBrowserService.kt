@@ -14,6 +14,8 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent
 import androidx.media.MediaBrowserServiceCompat
 import com.rogerneumann.autovakt.R
+import com.rogerneumann.autovakt.auto.render.GaugeCardRenderer
+import com.rogerneumann.autovakt.auto.render.GaugeSlot
 import com.rogerneumann.autovakt.auto.render.GaugeSlotResolver
 import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.data.OBD2Repository
@@ -412,73 +414,35 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
         val assignments = vehicleLayoutManager.getSlotAssignments(repository.currentLayoutKey.value)
         val slots = GaugeSlotResolver.resolve(data, assignments, data.vehicleProfile, vehicleLayoutManager)
 
+        updateQueue(slots)  // populate CoolWalk swipe-left queue view
+
         return assignments.zip(slots)
             .filter { (_, slot) -> slot.value != "--" }
             .mapIndexed { i, (shortName, slot) ->
-                val bitmap = renderSingleMetricBitmap(
-                    slot.label, slot.value, slot.unit, accentColorFor(shortName ?: "")
-                )
+                val bitmap = GaugeCardRenderer.renderCard(slot, GaugeCardRenderer.accentColorFor(shortName ?: ""))
                 val desc = MediaDescriptionCompat.Builder()
                     .setMediaId("slot_$i")
-                    .setTitle("${slot.value} ${slot.unit}".trim())
-                    .setSubtitle(slot.label)
+                    .setTitle(slot.label)
+                    .setSubtitle("${slot.value} ${slot.unit}".trim())
                     .setIconBitmap(bitmap)
                     .build()
                 MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE)
             }.toMutableList()
     }
 
-    private fun accentColorFor(shortName: String): Int = when (shortName) {
-        "SOC"             -> Color.parseColor("#00E676")
-        "PWR"             -> Color.parseColor("#29B6F6")
-        "SPEED"           -> Color.parseColor("#ECEFF1")
-        "instantMiPerKwh",
-        "averageMiPerKwh" -> Color.parseColor("#69F0AE")
-        "instantMpg",
-        "averageMpg"      -> Color.parseColor("#FFCC02")
-        "BATT_T_MAX",
-        "BATT_T_MIN"      -> Color.parseColor("#FF9800")
-        "HV_V", "HV_I"   -> Color.parseColor("#CE93D8")
-        "RPM"             -> Color.parseColor("#EF9A9A")
-        "LOAD"            -> Color.parseColor("#FF9800")
-        "BOOST_PSI",
-        "FUEL_RATE"       -> Color.parseColor("#29B6F6")
-        else              -> Color.WHITE
-    }
-
-    private fun renderSingleMetricBitmap(label: String, value: String, unit: String, accentColor: Int): Bitmap {
-        val size = 512
-        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bmp)
-        canvas.drawColor(Color.parseColor("#121212"))
-        val cx = size / 2f
-
-        val p = Paint().apply {
-            isAntiAlias = true
-            textAlign = Paint.Align.CENTER
-            typeface = Typeface.DEFAULT_BOLD
-        }
-
-        // Label
-        p.textSize = 52f
-        p.color = Color.WHITE
-        p.alpha = 140
-        canvas.drawText(label, cx, size * 0.28f, p)
-
-        // Value — auto-size to fit width
-        p.color = accentColor
-        p.alpha = 255
-        p.textSize = 160f
-        while (p.measureText(value) > size * 0.88f && p.textSize > 60f) p.textSize -= 4f
-        canvas.drawText(value, cx, size * 0.62f, p)
-
-        // Unit
-        p.textSize = 56f
-        p.color = Color.WHITE
-        p.alpha = 180
-        canvas.drawText(unit, cx, size * 0.80f, p)
-
-        return bmp
+    private fun updateQueue(slots: List<GaugeSlot>) {
+        val queueItems = slots
+            .filter { it.value != "--" }
+            .mapIndexed { i, slot ->
+                val desc = MediaDescriptionCompat.Builder()
+                    .setMediaId("q_$i")
+                    .setTitle("${slot.value} ${slot.unit}".trim())
+                    .setSubtitle(slot.label)
+                    .build()
+                MediaSessionCompat.QueueItem(desc, i.toLong())
+            }
+        mediaSession?.setQueue(queueItems)
+        mediaSession?.setQueueTitle("Vehicle Data")
     }
 
     override fun onDestroy() {

@@ -4,6 +4,8 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.CarIcon
+import androidx.car.app.model.GridItem
+import androidx.car.app.model.GridTemplate
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Pane
@@ -16,6 +18,7 @@ import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.lifecycleScope
 import com.rogerneumann.autovakt.R
+import com.rogerneumann.autovakt.auto.render.GaugeCardRenderer
 import com.rogerneumann.autovakt.auto.render.GaugeSlotResolver
 import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.data.OBD2Repository
@@ -93,10 +96,14 @@ class DashboardScreen(
         val tripIcon = CarIcon.Builder(
             IconCompat.createWithResource(carContext, R.drawable.ic_history_24)
         ).build()
+        val dataIcon = CarIcon.Builder(
+            IconCompat.createWithResource(carContext, R.drawable.ic_science_24)
+        ).build()
 
         val activeTemplate: Template = when (activeTabId) {
             "media" -> buildMediaTemplate(metadata.first, metadata.second)
             "trip"  -> buildTripTemplate()
+            "data"  -> buildDataGridTemplate(data)
             else    -> buildGaugesTemplate(data)
         }
 
@@ -117,6 +124,11 @@ class DashboardScreen(
                 .setIcon(tripIcon)
                 .setContentId("trip")
                 .build())
+            .addTab(Tab.Builder()
+                .setTitle("Data")
+                .setIcon(dataIcon)
+                .setContentId("data")
+                .build())
             .setTabContents(TabContents.Builder(activeTemplate).build())
             .setActiveTabContentId(activeTabId)
             .build()
@@ -131,6 +143,33 @@ class DashboardScreen(
         }
         itemList.addItem(row("Host API", carContext.carAppApiLevel.toString()))
         return ListTemplate.Builder()
+            .setSingleList(itemList.build())
+            .build()
+    }
+
+    private fun buildDataGridTemplate(data: AutoVaktLiveData): GridTemplate {
+        val assignments = vehicleLayoutManager.getSlotAssignments(lastLayoutKey)
+        val slots = GaugeSlotResolver.resolve(data, assignments, data.vehicleProfile, vehicleLayoutManager)
+
+        val itemList = ItemList.Builder()
+        var count = 0
+        assignments.zip(slots).forEach { (shortName, slot) ->
+            if (slot.value == "--" || count >= 6) return@forEach
+            val bitmap = GaugeCardRenderer.renderCard(
+                slot, GaugeCardRenderer.accentColorFor(shortName ?: ""), size = 256
+            )
+            val icon = CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
+            itemList.addItem(
+                GridItem.Builder()
+                    .setTitle(slot.label)
+                    .setText("${slot.value} ${slot.unit}".trim())
+                    .setImage(icon)
+                    .build()
+            )
+            count++
+        }
+
+        return GridTemplate.Builder()
             .setSingleList(itemList.build())
             .build()
     }
