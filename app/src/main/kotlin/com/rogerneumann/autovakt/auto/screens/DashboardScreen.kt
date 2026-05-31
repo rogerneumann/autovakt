@@ -81,7 +81,7 @@ class DashboardScreen(
         val apiLevel = carContext.carAppApiLevel
 
         if (apiLevel < 6) {
-            return buildFallbackTemplate(data, apiLevel)
+            return buildFallbackTemplate(data)
         }
 
         val gaugesIcon = CarIcon.Builder(
@@ -136,42 +136,35 @@ class DashboardScreen(
     }
 
     // Shown when AA host is below Car App API level 6 (no TabTemplate support).
-    // Rows mirror the phone dashboard slot configuration — same metrics, same order.
-    private fun buildFallbackTemplate(data: AutoVaktLiveData, apiLevel: Int): PaneTemplate {
+    // PaneTemplate only allows 2 rows — use ListTemplate which supports 6+ items at all API levels.
+    private fun buildFallbackTemplate(data: AutoVaktLiveData): ListTemplate {
         val assignments = vehicleLayoutManager.getSlotAssignments(lastLayoutKey)
         val slots = GaugeSlotResolver.resolve(data, assignments, data.vehicleProfile, vehicleLayoutManager)
 
-        val mediaStr = mediaRemoteManager.currentMetadata.value.let { (title, artist) ->
-            when {
-                title.isNotBlank() && artist.isNotBlank() -> "$title · $artist"
-                title.isNotBlank() -> title
-                else -> "No media"
-            }
+        val (title, artist) = mediaRemoteManager.currentMetadata.value
+        val mediaStr = when {
+            title.isNotBlank() && artist.isNotBlank() -> "$title · $artist"
+            title.isNotBlank() -> title
+            else -> "No media"
         }
 
-        val pane = Pane.Builder()
+        val itemList = ItemList.Builder()
         slots.filter { it.value != "--" }.forEach { slot ->
-            pane.addRow(Row.Builder()
-                .setTitle("${slot.value} ${slot.unit}".trim())
-                .addText(slot.label)
-                .build())
+            itemList.addItem(row(slot.label, "${slot.value} ${slot.unit}".trim()))
         }
-        pane.addRow(Row.Builder()
+        itemList.addItem(Row.Builder()
             .setTitle(mediaStr)
             .addText("Now Playing")
             .setOnClickListener { mediaRemoteManager.launchActiveMediaApp() }
             .build())
-        pane.addRow(Row.Builder()
+        itemList.addItem(Row.Builder()
             .setTitle("Trip History")
             .addText("View recorded trips")
             .setOnClickListener { screenManager.push(TripScreen(carContext, tripRepository)) }
             .build())
-        pane.addAction(Action.Builder()
-            .setTitle("Music")
-            .setOnClickListener { mediaRemoteManager.launchActiveMediaApp() }
-            .build())
 
-        return PaneTemplate.Builder(pane.build())
+        return ListTemplate.Builder()
+            .setSingleList(itemList.build())
             .setTitle("AutoVakt")
             .setHeaderAction(Action.APP_ICON)
             .build()
