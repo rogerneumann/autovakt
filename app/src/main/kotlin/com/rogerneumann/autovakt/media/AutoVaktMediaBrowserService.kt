@@ -15,8 +15,9 @@ import android.view.KeyEvent
 import androidx.media.MediaBrowserServiceCompat
 import com.rogerneumann.autovakt.R
 import com.rogerneumann.autovakt.auto.render.GaugeSlotResolver
-import com.rogerneumann.autovakt.data.OBD2Repository
 import com.rogerneumann.autovakt.data.AutoVaktLiveData
+import com.rogerneumann.autovakt.data.OBD2Repository
+import com.rogerneumann.autovakt.data.PowertrainType
 import com.rogerneumann.autovakt.data.VehicleLayoutManager
 import com.rogerneumann.autovakt.util.AutoVaktDisplayState
 import dagger.hilt.android.AndroidEntryPoint
@@ -408,34 +409,77 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
 
     // ── Data album helpers ────────────────────────────────────────────────────
 
+    // One card per metric — (mediaId, shortName, accentColorHex)
+    private val EV_METRICS = listOf(
+        Triple("soc",      "SOC",             "#00E676"),
+        Triple("power",    "PWR",             "#29B6F6"),
+        Triple("speed",    "SPEED",           "#ECEFF1"),
+        Triple("inst_eff", "instantMiPerKwh", "#A5D6A7"),
+        Triple("avg_eff",  "averageMiPerKwh", "#69F0AE"),
+        Triple("batt_hi",  "BATT_T_MAX",      "#FF9800"),
+        Triple("hv_volt",  "HV_V",            "#CE93D8"),
+    )
+    private val ICE_METRICS = listOf(
+        Triple("speed",    "SPEED",           "#ECEFF1"),
+        Triple("rpm",      "RPM",             "#EF9A9A"),
+        Triple("load",     "LOAD",            "#FF9800"),
+        Triple("inst_mpg", "instantMpg",      "#FFCC02"),
+        Triple("avg_mpg",  "averageMpg",      "#FFE082"),
+        Triple("fuel",     "FUEL_RATE",       "#29B6F6"),
+    )
+
     private fun buildDataAlbums(data: AutoVaktLiveData): MutableList<MediaBrowserCompat.MediaItem> {
-        val configSlots = vehicleLayoutManager.getSlotAssignments(repository.currentLayoutKey.value)
-        return mutableListOf(
-            buildAlbumItem("album_dashboard", "Dashboard", configSlots, data),
-            buildAlbumItem("album_battery",   "Battery",
-                listOf("SOC", "HV_V", "BATT_T_MAX", "BATT_T_MIN"), data),
-            buildAlbumItem("album_efficiency", "Efficiency",
-                listOf("instantMiPerKwh", "averageMiPerKwh", "instantMpg", "averageMpg"), data),
-        )
+        val isEv = data.vehicleProfile.powertrain == PowertrainType.EV ||
+                   data.vehicleProfile.powertrain == PowertrainType.PHEV
+        val metrics = if (isEv) EV_METRICS else ICE_METRICS
+        return metrics.map { (id, shortName, accentHex) ->
+            val slot = GaugeSlotResolver.resolve(
+                data, listOf(shortName), data.vehicleProfile, vehicleLayoutManager
+            ).first()
+            val bitmap = renderSingleMetricBitmap(slot.label, slot.value, slot.unit,
+                Color.parseColor(accentHex))
+            val desc = MediaDescriptionCompat.Builder()
+                .setMediaId(id)
+                .setTitle("${slot.value} ${slot.unit}".trim())
+                .setSubtitle(slot.label)
+                .setIconBitmap(bitmap)
+                .build()
+            MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE)
+        }.toMutableList()
     }
 
-    private fun buildAlbumItem(
-        id: String, name: String, slots: List<String?>, data: AutoVaktLiveData
-    ): MediaBrowserCompat.MediaItem {
-        val bitmap = renderAlbumBitmap(data, slots)
-        val desc = MediaDescriptionCompat.Builder()
-            .setMediaId(id)
-            .setTitle(name)
-            .setIconBitmap(bitmap)
-            .build()
-        return MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE)
-    }
-
-    private fun renderAlbumBitmap(data: AutoVaktLiveData, slots: List<String?>): Bitmap {
-        val bmp = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888)
+    private fun renderSingleMetricBitmap(label: String, value: String, unit: String, accentColor: Int): Bitmap {
+        val size = 512
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
         canvas.drawColor(Color.parseColor("#121212"))
-        drawTelemetryGrid(canvas, data, slots, 0f, 0f, 512f, 512f)
+        val cx = size / 2f
+
+        val p = Paint().apply {
+            isAntiAlias = true
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.DEFAULT_BOLD
+        }
+
+        // Label
+        p.textSize = 52f
+        p.color = Color.WHITE
+        p.alpha = 140
+        canvas.drawText(label, cx, size * 0.28f, p)
+
+        // Value — auto-size to fit width
+        p.color = accentColor
+        p.alpha = 255
+        p.textSize = 160f
+        while (p.measureText(value) > size * 0.88f && p.textSize > 60f) p.textSize -= 4f
+        canvas.drawText(value, cx, size * 0.62f, p)
+
+        // Unit
+        p.textSize = 56f
+        p.color = Color.WHITE
+        p.alpha = 180
+        canvas.drawText(unit, cx, size * 0.80f, p)
+
         return bmp
     }
 

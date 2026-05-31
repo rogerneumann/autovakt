@@ -68,11 +68,13 @@ class MediaRemoteManager @Inject constructor(
     fun launchActiveMediaApp() {
         val msm = context.getSystemService(Context.MEDIA_SESSION_SERVICE) as? MediaSessionManager
         val cn = ComponentName(context, AutoVaktNotificationListener::class.java)
-        val controller = try {
-            msm?.getActiveSessions(cn)?.firstOrNull {
-                it.playbackState?.state == PlaybackState.STATE_PLAYING
-            } ?: msm?.getActiveSessions(cn)?.firstOrNull()
+        // Exclude AutoVakt's own session — we want the underlying music app
+        val sessions = try {
+            msm?.getActiveSessions(cn)?.filter { it.packageName != context.packageName }
         } catch (_: SecurityException) { null }
+        val controller = sessions?.firstOrNull {
+            it.playbackState?.state == PlaybackState.STATE_PLAYING
+        } ?: sessions?.firstOrNull()
 
         controller?.sessionActivity?.let {
             try { it.send(); return } catch (_: PendingIntent.CanceledException) { }
