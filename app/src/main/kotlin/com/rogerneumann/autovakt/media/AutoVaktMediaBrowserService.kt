@@ -17,7 +17,6 @@ import com.rogerneumann.autovakt.R
 import com.rogerneumann.autovakt.auto.render.GaugeSlotResolver
 import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.data.OBD2Repository
-import com.rogerneumann.autovakt.data.PowertrainType
 import com.rogerneumann.autovakt.data.VehicleLayoutManager
 import com.rogerneumann.autovakt.util.AutoVaktDisplayState
 import dagger.hilt.android.AndroidEntryPoint
@@ -409,43 +408,42 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
 
     // ── Data album helpers ────────────────────────────────────────────────────
 
-    // One card per metric — (mediaId, shortName, accentColorHex)
-    private val EV_METRICS = listOf(
-        Triple("soc",      "SOC",             "#00E676"),
-        Triple("power",    "PWR",             "#29B6F6"),
-        Triple("speed",    "SPEED",           "#ECEFF1"),
-        Triple("inst_eff", "instantMiPerKwh", "#A5D6A7"),
-        Triple("avg_eff",  "averageMiPerKwh", "#69F0AE"),
-        Triple("batt_hi",  "BATT_T_MAX",      "#FF9800"),
-        Triple("hv_volt",  "HV_V",            "#CE93D8"),
-    )
-    private val ICE_METRICS = listOf(
-        Triple("speed",    "SPEED",           "#ECEFF1"),
-        Triple("rpm",      "RPM",             "#EF9A9A"),
-        Triple("load",     "LOAD",            "#FF9800"),
-        Triple("inst_mpg", "instantMpg",      "#FFCC02"),
-        Triple("avg_mpg",  "averageMpg",      "#FFE082"),
-        Triple("fuel",     "FUEL_RATE",       "#29B6F6"),
-    )
-
     private fun buildDataAlbums(data: AutoVaktLiveData): MutableList<MediaBrowserCompat.MediaItem> {
-        val isEv = data.vehicleProfile.powertrain == PowertrainType.EV ||
-                   data.vehicleProfile.powertrain == PowertrainType.PHEV
-        val metrics = if (isEv) EV_METRICS else ICE_METRICS
-        return metrics.map { (id, shortName, accentHex) ->
-            val slot = GaugeSlotResolver.resolve(
-                data, listOf(shortName), data.vehicleProfile, vehicleLayoutManager
-            ).first()
-            val bitmap = renderSingleMetricBitmap(slot.label, slot.value, slot.unit,
-                Color.parseColor(accentHex))
-            val desc = MediaDescriptionCompat.Builder()
-                .setMediaId(id)
-                .setTitle("${slot.value} ${slot.unit}".trim())
-                .setSubtitle(slot.label)
-                .setIconBitmap(bitmap)
-                .build()
-            MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE)
-        }.toMutableList()
+        val assignments = vehicleLayoutManager.getSlotAssignments(repository.currentLayoutKey.value)
+        val slots = GaugeSlotResolver.resolve(data, assignments, data.vehicleProfile, vehicleLayoutManager)
+
+        return assignments.zip(slots)
+            .filter { (_, slot) -> slot.value != "--" }
+            .mapIndexed { i, (shortName, slot) ->
+                val bitmap = renderSingleMetricBitmap(
+                    slot.label, slot.value, slot.unit, accentColorFor(shortName ?: "")
+                )
+                val desc = MediaDescriptionCompat.Builder()
+                    .setMediaId("slot_$i")
+                    .setTitle("${slot.value} ${slot.unit}".trim())
+                    .setSubtitle(slot.label)
+                    .setIconBitmap(bitmap)
+                    .build()
+                MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE)
+            }.toMutableList()
+    }
+
+    private fun accentColorFor(shortName: String): Int = when (shortName) {
+        "SOC"             -> Color.parseColor("#00E676")
+        "PWR"             -> Color.parseColor("#29B6F6")
+        "SPEED"           -> Color.parseColor("#ECEFF1")
+        "instantMiPerKwh",
+        "averageMiPerKwh" -> Color.parseColor("#69F0AE")
+        "instantMpg",
+        "averageMpg"      -> Color.parseColor("#FFCC02")
+        "BATT_T_MAX",
+        "BATT_T_MIN"      -> Color.parseColor("#FF9800")
+        "HV_V", "HV_I"   -> Color.parseColor("#CE93D8")
+        "RPM"             -> Color.parseColor("#EF9A9A")
+        "LOAD"            -> Color.parseColor("#FF9800")
+        "BOOST_PSI",
+        "FUEL_RATE"       -> Color.parseColor("#29B6F6")
+        else              -> Color.WHITE
     }
 
     private fun renderSingleMetricBitmap(label: String, value: String, unit: String, accentColor: Int): Bitmap {

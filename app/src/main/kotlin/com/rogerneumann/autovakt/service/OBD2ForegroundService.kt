@@ -104,6 +104,8 @@ class OBD2ForegroundService : android.app.Service() {
         try {
             val transport = if (type == DeviceType.BLE.name) bleTransport else classicTransport
             transportDelegate.setTransport(transport)
+            try { transport.disconnect() } catch (_: Exception) {}  // clean BLE state before reconnect
+            delay(500L)
             transport.connect(address)
             repository.start(useDemoMode = false)
         } catch (_: Exception) { /* watchdog will retry */ }

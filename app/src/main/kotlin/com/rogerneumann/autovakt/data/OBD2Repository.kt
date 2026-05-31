@@ -80,6 +80,10 @@ class OBD2Repository @Inject constructor(
     fun start(useDemoMode: Boolean = false) {
         isDemoMode = useDemoMode
         pollingJob?.cancel()
+        // Set Connecting immediately so the watchdog doesn't see Error and cancel this attempt
+        if (!useDemoMode) {
+            _liveData.value = _liveData.value.copy(connectionState = ConnectionState.Connecting)
+        }
         pollingJob = repositoryScope.launch {
             if (isDemoMode) runDemoLoop() else runLiveLoop()
         }
