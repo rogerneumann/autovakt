@@ -79,7 +79,7 @@ class OBD2ForegroundService : Service() {
         // Start the TCP bridge for 3rd party apps
         bridgeServer.start()
 
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun createNotificationChannel() {

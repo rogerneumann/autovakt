@@ -139,31 +139,48 @@ class DashboardScreen(
     }
 
     // Shown when AA host is below Car App API level 6 (no TabTemplate support).
-    // Includes all gauge rows plus clickable navigation to Trip History.
-    private fun buildFallbackTemplate(data: AutoVaktLiveData, apiLevel: Int): ListTemplate =
-        ListTemplate.Builder()
-            .setTitle("AutoVakt · Host $apiLevel")
-            .setSingleList(ItemList.Builder()
-                .addItem(row("Battery",
-                    data.soc?.let { "%.0f%%".format(it) }))
-                .addItem(row("Power",
-                    data.powerKw?.let { "%.1f kW".format(it) }
-                        ?: data.engineLoad?.let { "%.0f%% load".format(it) }))
-                .addItem(row("Speed",
-                    data.speedMph?.let { "%.0f mph".format(it) }))
-                .addItem(row("Efficiency",
-                    data.instantMiPerKwh?.let { "%.1f mi/kWh".format(it) }
-                        ?: data.instantMpg?.let { "%.0f mpg".format(it) }))
-                .addItem(row("Temp",
-                    data.battTempMaxC?.let { "%.0f°C batt".format(it) }
-                        ?: data.coolantTempC?.let { "%.0f°C coolant".format(it) }))
-                .addItem(Row.Builder()
-                    .setTitle("Trip History")
-                    .addText("View recorded trips")
-                    .setOnClickListener { screenManager.push(TripScreen(carContext, tripRepository)) }
-                    .build())
+    // PaneTemplate supports actions at all API levels and shows gauge rows + media switch.
+    private fun buildFallbackTemplate(data: AutoVaktLiveData, apiLevel: Int): PaneTemplate {
+        val socStr   = data.soc?.let { "%.0f%%".format(it) } ?: "--"
+        val powerStr = data.powerKw?.let { "%.1f kW".format(it) }
+                       ?: data.engineLoad?.let { "%.0f%% load".format(it) } ?: "--"
+        val speedStr = data.speedMph?.let { "%.0f mph".format(it) } ?: "--"
+        val effStr   = data.instantMiPerKwh?.let { "%.1f mi/kWh".format(it) }
+                       ?: data.instantMpg?.let { "%.0f mpg".format(it) } ?: "--"
+        val avgStr   = data.averageMiPerKwh?.let { "%.1f mi/kWh".format(it) }
+                       ?: data.averageMpg?.let { "%.0f mpg".format(it) } ?: "--"
+        val tempStr  = data.battTempMaxC?.let { "%.0f°C batt".format(it) }
+                       ?: data.coolantTempC?.let { "%.0f°C coolant".format(it) } ?: "--"
+
+        val mediaStr = mediaRemoteManager.currentMetadata.value.let { (title, artist) ->
+            when {
+                title.isNotBlank() && artist.isNotBlank() -> "$title · $artist"
+                title.isNotBlank() -> title
+                else -> "No media playing"
+            }
+        }
+
+        val pane = Pane.Builder()
+            .addRow(Row.Builder().setTitle("$socStr  ·  $powerStr  ·  $speedStr").addText("SOC · Power · Speed").build())
+            .addRow(Row.Builder().setTitle("Inst $effStr  ·  Avg $avgStr").addText("Efficiency").build())
+            .addRow(Row.Builder().setTitle(tempStr).addText("Temperature").build())
+            .addRow(Row.Builder().setTitle(mediaStr).addText("Now Playing")
+                .setOnClickListener { mediaRemoteManager.launchActiveMediaApp() }.build())
+            .addRow(Row.Builder().setTitle("Trip History")
+                .addText("View recorded trips")
+                .setOnClickListener { screenManager.push(TripScreen(carContext, tripRepository)) }
+                .build())
+            .addAction(Action.Builder()
+                .setTitle("Music")
+                .setOnClickListener { mediaRemoteManager.launchActiveMediaApp() }
                 .build())
             .build()
+
+        return PaneTemplate.Builder(pane)
+            .setTitle("AutoVakt")
+            .setHeaderAction(Action.APP_ICON)
+            .build()
+    }
 
     private fun buildMediaTemplate(title: String, artist: String): PaneTemplate {
         val displayTitle = title.ifBlank { "No media playing" }

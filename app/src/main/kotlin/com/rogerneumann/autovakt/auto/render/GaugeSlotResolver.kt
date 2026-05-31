@@ -116,7 +116,8 @@ object GaugeSlotResolver {
         val fraction = if (displayType != SlotDisplayType.NUMERIC && numericVal != null && max != min) {
             ((numericVal - min) / (max - min)).coerceIn(0f, 1f)
         } else null
+        val isBidirectional = displayType == SlotDisplayType.BAR && min < 0f && max > 0f
 
-        return resolved.copy(displayType = displayType, fraction = fraction)
+        return resolved.copy(displayType = displayType, fraction = fraction, isBidirectional = isBidirectional)
     }
 }

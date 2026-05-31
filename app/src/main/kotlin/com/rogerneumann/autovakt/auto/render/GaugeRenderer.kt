@@ -266,49 +266,14 @@ class GaugeRenderer {
             SlotDisplayType.BAR -> {
                 val frac    = slot.fraction ?: 0f
                 val pad     = cw * 0.08f
-                val barTop    = top  + ch * 0.72f
-                val barBottom = top  + ch * 0.88f
+                val barTop    = top  + ch * 0.78f
+                val barBottom = top  + ch * 0.91f
                 val barLeft   = left + pad
                 val barRight  = left + cw - pad
                 val barWidth  = barRight - barLeft
+                val textX     = left + cw / 2f
 
-                // Background track
-                val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = Color.GRAY; alpha = 60; style = Paint.Style.FILL
-                }
-                canvas.drawRect(barLeft, barTop, barRight, barBottom, trackPaint)
-
-                // Fill color: SOC/Batt inverted (high = green), others normal (high = red)
-                val barColor = if (slot.label == "SOC" || slot.label == "Batt") {
-                    when {
-                        frac > 0.66f -> Color.GREEN
-                        frac > 0.33f -> Color.YELLOW
-                        else         -> Color.RED
-                    }
-                } else {
-                    when {
-                        frac < 0.33f -> Color.GREEN
-                        frac < 0.66f -> Color.YELLOW
-                        else         -> Color.RED
-                    }
-                }
-                val fillBarPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = barColor; style = Paint.Style.FILL
-                }
-                canvas.drawRect(barLeft, barTop, barLeft + barWidth * frac, barBottom, fillBarPaint)
-
-                // Value text above bar
-                val valueSize = minOf(ch * valueSizeFraction, cw * 0.48f)
-                val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    textSize  = valueSize
-                    color     = t.text
-                    textAlign = Paint.Align.CENTER
-                    typeface  = Typeface.DEFAULT_BOLD
-                }
-                val textX = left + cw / 2f
-                canvas.drawText(slot.value, textX, barTop - 4f, valuePaint)
-
-                // Label at top of cell
+                // Label at top
                 val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     textSize  = minOf(ch * 0.13f, cw * 0.16f)
                     color     = t.text
@@ -316,6 +281,72 @@ class GaugeRenderer {
                     textAlign = Paint.Align.CENTER
                 }
                 canvas.drawText(slot.label, textX, top + ch * 0.18f, labelPaint)
+
+                // Value text — centred in the cell above bar
+                val valueSize = minOf(ch * valueSizeFraction, cw * 0.46f)
+                val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    textSize  = valueSize
+                    color     = t.text
+                    textAlign = Paint.Align.CENTER
+                    typeface  = Typeface.DEFAULT_BOLD
+                }
+                canvas.drawText(slot.value, textX, top + ch * 0.60f + valueSize * 0.35f, valuePaint)
+
+                // Unit below value
+                val unitPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    textSize  = minOf(ch * 0.11f, cw * 0.14f)
+                    color     = t.text
+                    alpha     = (255 * 0.65f).toInt()
+                    textAlign = Paint.Align.CENTER
+                }
+                canvas.drawText(slot.unit, textX, top + ch * 0.72f, unitPaint)
+
+                // Background track
+                val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = Color.GRAY; alpha = 60; style = Paint.Style.FILL
+                }
+                canvas.drawRect(barLeft, barTop, barRight, barBottom, trackPaint)
+
+                if (slot.isBidirectional) {
+                    // Bidirectional bar: frac=0.5 → neutral centre
+                    val centreX = barLeft + barWidth * 0.5f
+                    val deviation = frac - 0.5f  // negative = regen, positive = drive
+                    val fillWidth = kotlin.math.abs(deviation) * barWidth
+                    val barColor = if (deviation < 0f) Color.GREEN
+                                   else if (fillWidth > barWidth * 0.67f) Color.RED
+                                   else Color.YELLOW
+                    val fillBarPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        color = barColor; style = Paint.Style.FILL
+                    }
+                    if (deviation < 0f) {
+                        canvas.drawRect(centreX - fillWidth, barTop, centreX, barBottom, fillBarPaint)
+                    } else {
+                        canvas.drawRect(centreX, barTop, centreX + fillWidth, barBottom, fillBarPaint)
+                    }
+                    // Centre tick
+                    val tickPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        color = Color.WHITE; alpha = 120; strokeWidth = 2f
+                    }
+                    canvas.drawLine(centreX, barTop, centreX, barBottom, tickPaint)
+                } else {
+                    val barColor = if (slot.label == "SOC" || slot.label == "Batt") {
+                        when {
+                            frac > 0.66f -> Color.GREEN
+                            frac > 0.33f -> Color.YELLOW
+                            else         -> Color.RED
+                        }
+                    } else {
+                        when {
+                            frac < 0.33f -> Color.GREEN
+                            frac < 0.66f -> Color.YELLOW
+                            else         -> Color.RED
+                        }
+                    }
+                    val fillBarPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        color = barColor; style = Paint.Style.FILL
+                    }
+                    canvas.drawRect(barLeft, barTop, barLeft + barWidth * frac, barBottom, fillBarPaint)
+                }
             }
         }
     }
