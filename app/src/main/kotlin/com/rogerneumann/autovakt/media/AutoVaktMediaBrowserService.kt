@@ -361,24 +361,29 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
     // ── Metadata title helpers ────────────────────────────────────────────────
 
     private fun buildTelemetryTitle(data: AutoVaktLiveData): String {
-        val soc = data.soc?.toInt()
-        val pwr = data.powerKw?.toInt()
+        val assignments = vehicleLayoutManager.getSlotAssignments(repository.currentLayoutKey.value)
+        val slots = GaugeSlotResolver.resolve(data, assignments, data.vehicleProfile, vehicleLayoutManager)
+        val firstTwo = slots.filter { it.value != "--" }.take(2)
         return buildString {
-            if (soc != null) append("SOC: $soc%")
-            if (pwr != null) {
+            firstTwo.forEach { slot ->
                 if (isNotEmpty()) append(" | ")
-                append("$pwr kW")
+                append("${slot.value} ${slot.unit}".trim())
             }
-            if (isEmpty()) append("AutoVakt Telemetry")
+            if (isEmpty()) append("AutoVakt")
         }
     }
 
     private fun buildHybridTitle(data: AutoVaktLiveData, songTitle: String): String {
-        val soc = data.soc?.toInt()
-        return when {
-            songTitle.isNotBlank() -> songTitle
-            soc != null -> "SOC: $soc% | AutoVakt"
-            else -> "AutoVakt"
+        if (songTitle.isNotBlank()) return songTitle
+        val assignments = vehicleLayoutManager.getSlotAssignments(repository.currentLayoutKey.value)
+        val slots = GaugeSlotResolver.resolve(data, assignments, data.vehicleProfile, vehicleLayoutManager)
+        val firstTwo = slots.filter { it.value != "--" }.take(2)
+        return buildString {
+            firstTwo.forEach { slot ->
+                if (isNotEmpty()) append(" | ")
+                append("${slot.value} ${slot.unit}".trim())
+            }
+            if (isEmpty()) append("AutoVakt")
         }
     }
 
@@ -418,6 +423,7 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
 
         return assignments.zip(slots)
             .filter { (_, slot) -> slot.value != "--" }
+            .take(6)  // AA GridTemplate and phone media browser both handle up to 6 cards well
             .mapIndexed { i, (shortName, slot) ->
                 val bitmap = GaugeCardRenderer.renderCard(slot, GaugeCardRenderer.accentColorFor(shortName ?: ""))
                 val desc = MediaDescriptionCompat.Builder()

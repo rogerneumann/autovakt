@@ -1,5 +1,6 @@
 package com.rogerneumann.autovakt.ui
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -11,6 +12,7 @@ import android.view.GestureDetector
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.animation.LinearInterpolator
 import com.rogerneumann.autovakt.auto.render.DisplayMode
 import com.rogerneumann.autovakt.media.MediaRemoteManager
 import com.rogerneumann.autovakt.auto.render.GaugeRenderer
@@ -116,6 +118,19 @@ class DashboardView @JvmOverloads constructor(
     }
     private val dotPaint = Paint().apply { isAntiAlias = true }
 
+    // Drives label marquee scrolling in GaugeRenderer for tiles with long text.
+    // Bounces 0→1→0→… at 30 fps so labels too wide for their cell scroll left/right.
+    private val marqueeAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+        duration     = 3000L
+        repeatMode   = ValueAnimator.REVERSE
+        repeatCount  = ValueAnimator.INFINITE
+        interpolator = LinearInterpolator()
+        addUpdateListener { anim ->
+            renderer.marqueePhase = anim.animatedValue as Float
+            postInvalidate()
+        }
+    }
+
     private val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
         private val SWIPE_VELOCITY = 400f
         private val SWIPE_DISTANCE = 80f
@@ -187,6 +202,16 @@ class DashboardView @JvmOverloads constructor(
             return false  // let click listener fire for hamburger reveal
         }
     })
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        marqueeAnimator.start()
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        marqueeAnimator.cancel()
+    }
 
     fun updateData(newData: AutoVaktLiveData) {
         data = newData

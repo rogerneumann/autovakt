@@ -40,6 +40,13 @@ class GaugeRenderer {
     // Set at the top of draw(); referenced by all private helpers (single-thread safe)
     private var t = GaugeTheme.DARK
 
+    /**
+     * Animated phase (0..1, driven by DashboardView's ValueAnimator) used to
+     * scroll label text that is too wide for its tile.  Stays 0 for static
+     * bitmap renders (BitmapMediaRenderer), which have a separate GaugeRenderer instance.
+     */
+    var marqueePhase: Float = 0f
+
     // ── Primary slot-based draw (Block 12c) ───────────────────────────────────
 
     /**
@@ -201,12 +208,12 @@ class GaugeRenderer {
                 val labelSize = minOf(ch * 0.13f, cw * 0.16f)
                 val unitSize  = minOf(ch * 0.12f, cw * 0.15f)
 
-                // Label
+                // Label — marquee-scroll if too wide for the tile
                 textPaint.color     = t.text
                 textPaint.textAlign = Paint.Align.CENTER
                 textPaint.textSize  = labelSize
                 textPaint.alpha     = (255 * 0.55f).toInt()
-                canvas.drawText(slot.label, cx, top + ch * 0.24f, textPaint)
+                drawMarqueeText(canvas, slot.label, cx, top + ch * 0.24f, left, right, textPaint)
 
                 // Value
                 textPaint.textSize = valueSize
@@ -273,14 +280,14 @@ class GaugeRenderer {
                 val barWidth  = barRight - barLeft
                 val textX     = left + cw / 2f
 
-                // Label at top
+                // Label at top — marquee-scroll if too wide
                 val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     textSize  = minOf(ch * 0.13f, cw * 0.16f)
                     color     = t.text
                     alpha     = (255 * 0.55f).toInt()
                     textAlign = Paint.Align.CENTER
                 }
-                canvas.drawText(slot.label, textX, top + ch * 0.18f, labelPaint)
+                drawMarqueeText(canvas, slot.label, textX, top + ch * 0.18f, left, right, labelPaint)
 
                 // Value text — centred in the cell above bar
                 val valueSize = minOf(ch * valueSizeFraction, cw * 0.46f)
@@ -795,6 +802,47 @@ class GaugeRenderer {
                 canvas.drawRect(cx - halfW - 5f, barY - 5f, cx + halfW + 5f, barY + 33f, paint)
             }
         }
+    }
+
+    // ── Marquee text helper ───────────────────────────────────────────────────
+
+    /**
+     * Draws [text] centered at ([cx], [y]).  If the text is too wide to fit
+     * between [clipLeft] and [clipRight] (with 6% horizontal padding each side),
+     * it clips the canvas to the available area and shifts the text left/right
+     * based on [marqueePhase] — creating a smooth back-and-forth scroll effect.
+     *
+     * When [marqueePhase] == 0 the beginning of the text is visible;
+     * at 1 the end is visible; the ValueAnimator in DashboardView uses
+     * REVERSE mode to bounce continuously between the two.
+     */
+    private fun drawMarqueeText(
+        canvas: Canvas,
+        text: String,
+        cx: Float, y: Float,
+        clipLeft: Float, clipRight: Float,
+        paint: Paint
+    ) {
+        val cellW  = clipRight - clipLeft
+        val hPad   = cellW * 0.06f
+        val avail  = cellW - hPad * 2f
+        val textW  = paint.measureText(text)
+
+        if (textW <= avail) {
+            canvas.drawText(text, cx, y, paint)
+            return
+        }
+
+        // Shift the text centre so the beginning of the text is visible at phase=0
+        // and the end is visible at phase=1.  maxShift is half the overflow.
+        val maxShift = (textW - avail) / 2f
+        val offset   = maxShift * (1f - 2f * marqueePhase)  // +maxShift → 0 → -maxShift
+
+        canvas.save()
+        canvas.clipRect(clipLeft + hPad, canvas.clipBounds.top.toFloat(),
+                        clipRight - hPad, canvas.clipBounds.bottom.toFloat())
+        canvas.drawText(text, cx + offset, y, paint)
+        canvas.restore()
     }
 
     // ── Drawing primitives ────────────────────────────────────────────────────
