@@ -107,9 +107,6 @@ class MainActivity : AppCompatActivity() {
         binding.dashboardView.onLaunchMediaApp     = { pkg ->
             packageManager.getLaunchIntentForPackage(pkg)?.let { startActivity(it) }
         }
-        binding.fabTrips.setOnClickListener {
-            startActivity(Intent(this, HistoryActivity::class.java))
-        }
         observeLiveData()
         FirstRunWizardManager(this, sharedPreferences, profileHub, profileManager) {
             // Callback: wizard was skipped or completed without pairing
