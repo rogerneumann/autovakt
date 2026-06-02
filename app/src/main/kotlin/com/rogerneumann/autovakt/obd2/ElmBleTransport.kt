@@ -336,10 +336,9 @@ class ElmBleTransport @Inject constructor(
     override suspend fun send(command: String) {
         withContext(Dispatchers.IO) {
             try {
-                val tx = txCharacteristic
-                if (tx == null) {
-                    Log.w(TAG, "send() called but txCharacteristic is null — dropping: $command")
-                    return@withContext
+                val tx = txCharacteristic ?: run {
+                    Log.w(TAG, "send() — txCharacteristic is null (disconnected): $command")
+                    throw java.io.IOException("BLE transport disconnected")
                 }
 
                 // Drain any stale notifications left over from the previous command.

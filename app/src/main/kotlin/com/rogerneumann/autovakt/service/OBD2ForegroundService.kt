@@ -93,7 +93,7 @@ class OBD2ForegroundService : android.app.Service() {
         abrpReporter.startReporting(serviceScope, repository.liveData)
         bridgeServer.start()
 
-        return START_NOT_STICKY
+        return START_STICKY
     }
 
     /**

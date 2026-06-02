@@ -109,7 +109,12 @@ class OBD2Repository @Inject constructor(
         while (transport.connectionState.value !is ConnectionState.Connected) {
             if (transport.connectionState.value is ConnectionState.Error
                 || System.currentTimeMillis() > deadline
-            ) return
+            ) {
+                _liveData.value = _liveData.value.copy(
+                    connectionState = ConnectionState.Error("Connection timed out")
+                )
+                return
+            }
             delay(300)
         }
 
@@ -207,6 +212,9 @@ class OBD2Repository @Inject constructor(
     }
 
     private suspend fun pollCustomPids() {
+        if (transport.connectionState.value !is ConnectionState.Connected) {
+            throw Exception("Transport disconnected")
+        }
         val profile = vehicleProfile
         val updatedCustom = _liveData.value.customPids.toMutableMap()
 
@@ -229,6 +237,9 @@ class OBD2Repository @Inject constructor(
         val bridgePids = bridgeServer.bridgeRequestedPids
 
         for (pid in profile.customPids) {
+            if (transport.connectionState.value !is ConnectionState.Connected) {
+                throw Exception("Transport disconnected during poll")
+            }
             try {
                 // Skip if a very fresh cache entry exists and this isn't a bridge-demanded PID
                 if (pidCache.get(pid.shortName, 2000L) != null && !bridgePids.contains(pid.shortName)) {
