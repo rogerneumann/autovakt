@@ -478,7 +478,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyScreenWakeSetting() {
-        val mode = sharedPreferences.getString("screen_wake_mode", "off")
+        val mode = sharedPreferences.getString("screen_wake_mode", "always")
         val keepOn = when (mode) {
             "always"   -> true
             "charging" -> isCharging()

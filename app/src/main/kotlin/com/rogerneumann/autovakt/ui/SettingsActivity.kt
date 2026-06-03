@@ -765,7 +765,7 @@ class SettingsActivity : AppCompatActivity() {
     // ── Screen Wake Lock ──────────────────────────────────────────────────────
 
     private fun setupScreenWakeSection() {
-        when (sharedPreferences.getString("screen_wake_mode", "off")) {
+        when (sharedPreferences.getString("screen_wake_mode", "always")) {
             "always"   -> binding.radioScreenAlways.isChecked = true
             "charging" -> binding.radioScreenCharging.isChecked = true
             else       -> binding.radioScreenOff.isChecked = true
