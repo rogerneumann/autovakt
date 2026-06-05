@@ -57,9 +57,9 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
     // Latest telemetry snapshot — used by onLoadChildren to render album art
     private var currentData = AutoVaktLiveData()
 
-    // 800×480 landscape canvas — standard AA mini-player size
+    // 800×800 square — scales correctly in CoolWalk's portrait album-art view
     private val bitmapW = 800
-    private val bitmapH = 480
+    private val bitmapH = 800
 
     // Pre-allocated and reused every render cycle to avoid 1.5 MB GC pressure per frame
     private val renderBitmap by lazy { Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888) }
@@ -218,19 +218,36 @@ class AutoVaktMediaBrowserService : MediaBrowserServiceCompat() {
 
     private fun drawTelemetryFull(canvas: Canvas, data: AutoVaktLiveData, assignments: List<String?>) {
         canvas.drawColor(Color.parseColor("#121212"))
-        drawTelemetryGrid(canvas, data, assignments, 0f, 0f, bitmapW.toFloat(), bitmapH.toFloat())
+        drawTelemetryGrid(canvas, data, assignments, 0f, 0f, bitmapW.toFloat(), bitmapH * 0.68f)
+        drawBottomGradient(canvas)
     }
 
     private fun drawHybrid(canvas: Canvas, data: AutoVaktLiveData, assignments: List<String?>, title: String, artist: String) {
         canvas.drawColor(Color.parseColor("#121212"))
-        val splitY = bitmapH * 0.55f
+        val splitY = bitmapH * 0.42f
         drawTelemetryGrid(canvas, data, assignments, 0f, 0f, bitmapW.toFloat(), splitY)
-        drawMediaStrip(canvas, 0f, splitY, bitmapW.toFloat(), bitmapH.toFloat(), title, artist)
+        drawMediaStrip(canvas, 0f, splitY, bitmapW.toFloat(), bitmapH * 0.70f, title, artist)
+        drawBottomGradient(canvas)
     }
 
     private fun drawMediaFull(canvas: Canvas, title: String, artist: String) {
         canvas.drawColor(Color.parseColor("#121212"))
-        drawMediaStrip(canvas, 0f, 0f, bitmapW.toFloat(), bitmapH.toFloat(), title, artist)
+        drawMediaStrip(canvas, 0f, 0f, bitmapW.toFloat(), bitmapH * 0.72f, title, artist)
+        drawBottomGradient(canvas)
+    }
+
+    // Fades the bottom 30% of the image to black so CoolWalk's playback controls
+    // have a clean dark background to render on top of.
+    private fun drawBottomGradient(canvas: Canvas, startFraction: Float = 0.68f) {
+        val startY = bitmapH * startFraction
+        val gradPaint = Paint().apply {
+            shader = android.graphics.LinearGradient(
+                0f, startY, 0f, bitmapH.toFloat(),
+                Color.TRANSPARENT, Color.BLACK,
+                android.graphics.Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawRect(0f, startY, bitmapW.toFloat(), bitmapH.toFloat(), gradPaint)
     }
 
     /**

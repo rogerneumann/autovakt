@@ -183,22 +183,10 @@ class ElmBluetoothTransport @Inject constructor(
                 delay(5_000L)
                 val elapsed = System.currentTimeMillis() - lastResponseTime
                 if (elapsed > 15_000L) {
-                    val addr = lastDeviceAddress
-                    if (addr != null) {
-                        Log.w(TAG, "Watchdog: no response for ${elapsed}ms — reconnecting to $addr")
-                        _connectionState.value = ConnectionState.Connecting
-                        cleanup()
-                        try {
-                            connect(addr)
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Watchdog reconnect failed: ${e.message}")
-                            _connectionState.value = ConnectionState.Error("Reconnect failed: ${e.message}")
-                        }
-                    } else {
-                        Log.e(TAG, "Watchdog: no address to reconnect")
-                        _connectionState.value = ConnectionState.Error("Watchdog timeout — no address to reconnect")
-                        break
-                    }
+                    Log.w(TAG, "Watchdog: no BT response for ${elapsed}ms — signalling error")
+                    _connectionState.value = ConnectionState.Error("No OBD2 response for ${elapsed / 1000}s")
+                    cleanup()
+                    break
                 }
             }
         }
