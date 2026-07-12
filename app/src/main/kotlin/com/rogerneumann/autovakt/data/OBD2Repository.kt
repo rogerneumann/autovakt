@@ -226,7 +226,7 @@ class OBD2Repository @Inject constructor(
                 queue.execute("ATSH $hdr")
                 val reopenResp = queue.execute("1003")
                 Log.d(TAG, "UDS session reopen → '${reopenResp.trim().take(40)}'")
-            } catch (e: CancellationException) { throw e } catch (_: Exception) { }
+            } catch (e: CancellationException) { throw e } catch (e: Exception) { Log.d(TAG, "UDS 1003 reopen failed: ${e.message}") }
         }
 
         // Track these for derived power calculation
