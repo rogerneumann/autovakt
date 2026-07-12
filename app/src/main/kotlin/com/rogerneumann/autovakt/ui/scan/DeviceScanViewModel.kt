@@ -175,7 +175,7 @@ class DeviceScanViewModel @Inject constructor(
 
         val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
         try {
-            context.registerReceiver(discoveryReceiver, filter, Context.RECEIVER_EXPORTED)
+            ContextCompat.registerReceiver(context, discoveryReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
             receiverRegistered = true
             bluetoothAdapter?.startDiscovery()
         } catch (e: Exception) {
