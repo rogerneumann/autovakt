@@ -2,10 +2,12 @@ package com.rogerneumann.autovakt.abrp
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.obd2.ConnectionState
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -30,6 +32,12 @@ class AbrpReporterTest {
 
     @Before
     fun setUp() {
+        // android.util.Log isn't mocked by default in plain JUnit (no Robolectric here) -
+        // any real Log call throws "not mocked". AbrpReporter.send() logs on every path.
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+
         every { mockContext.getSharedPreferences(any(), any()) } returns mockPrefs
         every { mockPrefs.edit() } returns mockEditor
         every { mockEditor.putString(any(), any()) } returns mockEditor

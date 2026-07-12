@@ -7,6 +7,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.rogerneumann.autovakt.auto.screens.DashboardScreen
 import com.rogerneumann.autovakt.data.AutoVaktLiveData
 import com.rogerneumann.autovakt.data.OBD2Repository
+import com.rogerneumann.autovakt.data.TripRepository
+import com.rogerneumann.autovakt.data.VehicleLayoutManager
 import com.rogerneumann.autovakt.media.MediaRemoteManager
 import io.mockk.every
 import io.mockk.mockk
@@ -72,18 +74,24 @@ class DashboardScreenTest {
             every { it.currentMetadata } returns MutableStateFlow("" to "")
         }
 
+    private fun makeTripRepository(): TripRepository = mockk<TripRepository>(relaxed = true).also {
+        every { it.getAllTrips() } returns MutableStateFlow(emptyList())
+    }
+
+    private fun makeVehicleLayoutManager(): VehicleLayoutManager = mockk<VehicleLayoutManager>(relaxed = true)
+
     // ── tests ─────────────────────────────────────────────────────────────────
 
     /**
      * API level >= 6: [DashboardScreen.onGetTemplate] must return a
-     * [TabTemplate] with exactly 3 tabs whose content IDs are
-     * "gauges", "media", and "trip".
+     * [TabTemplate] with exactly 4 tabs whose content IDs are
+     * "gauges", "media", "trip", and "data".
      */
     @Test
     fun `high api level returns TabTemplate with gauges media trip tabs`() {
         val carContext = makeTestCarContext().also { it.forceApiLevel(6) }
 
-        val screen = DashboardScreen(carContext, makeRepository(), makeMediaManager())
+        val screen = DashboardScreen(carContext, makeRepository(), makeMediaManager(), makeTripRepository(), makeVehicleLayoutManager())
         val template = screen.onGetTemplate()
 
         assertTrue(
@@ -92,10 +100,10 @@ class DashboardScreenTest {
         )
 
         val tabs = (template as TabTemplate).tabs
-        assertEquals("Expected 3 tabs", 3, tabs.size)
+        assertEquals("Expected 4 tabs", 4, tabs.size)
 
         val ids = tabs.map { it.contentId }.toSet()
-        assertEquals(setOf("gauges", "media", "trip"), ids)
+        assertEquals(setOf("gauges", "media", "trip", "data"), ids)
     }
 
     /**
@@ -106,7 +114,7 @@ class DashboardScreenTest {
     fun `low api level returns ListTemplate`() {
         val carContext = makeTestCarContext().also { it.forceApiLevel(5) }
 
-        val screen = DashboardScreen(carContext, makeRepository(), makeMediaManager())
+        val screen = DashboardScreen(carContext, makeRepository(), makeMediaManager(), makeTripRepository(), makeVehicleLayoutManager())
         val template = screen.onGetTemplate()
 
         assertTrue(
@@ -121,7 +129,7 @@ class DashboardScreenTest {
     @Test
     fun `onGetTemplate does not throw`() {
         val carContext = makeTestCarContext().also { it.forceApiLevel(6) }
-        val screen = DashboardScreen(carContext, makeRepository(), makeMediaManager())
+        val screen = DashboardScreen(carContext, makeRepository(), makeMediaManager(), makeTripRepository(), makeVehicleLayoutManager())
         assertNotNull(screen.onGetTemplate())
     }
 }
