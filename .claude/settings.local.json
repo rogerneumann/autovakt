@@ -5,7 +5,25 @@
       "WebSearch",
       "WebFetch(domain:developers.google.com)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:www.uinkits.com)"
+      "WebFetch(domain:www.uinkits.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:gist.githubusercontent.com)",
+      "WebFetch(domain:gist.github.com)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Roger\\\\Documents\\\\ai-md_storage\\\\vakt\\\\\" -Recurse -File | ForEach-Object { $_.FullName })",
+      "WebFetch(domain:allev.info)",
+      "WebFetch(domain:www.chevybolt.org)",
+      "WebFetch(domain:obdfree.com)",
+      "WebFetch(domain:www.gm-volt.com)",
+      "WebFetch(domain:forum.peak-system.com)",
+      "WebFetch(domain:support.google.com)",
+      "WebFetch(domain:obdeleven.com)",
+      "WebFetch(domain:cs.android.com)",
+      "WebFetch(domain:documenter.getpostman.com)",
+      "WebFetch(domain:abetterrouteplanner.com)",
+      "WebFetch(domain:docs.openvehicles.com)",
+      "WebFetch(domain:meatpihq.github.io)",
+      "PowerShell(git *)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Eclipse Adoptium\\\\jdk-21.0.11.10-hotspot\"; $env:ANDROID_SDK_ROOT = \"C:\\\\Android\\\\android-sdk\"; $sdkman = \"C:\\\\Android\\\\android-sdk\\\\cmdline-tools\\\\latest\\\\bin\\\\sdkmanager.bat\"; echo \"y\" | & $sdkman \"extras;google;auto\" \"extras;google;simulators\" 2>&1)"
     ]
   }
 }
