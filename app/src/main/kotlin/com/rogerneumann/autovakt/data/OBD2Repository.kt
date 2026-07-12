@@ -367,7 +367,7 @@ class OBD2Repository @Inject constructor(
             ByteArray(payloadHex.length / 2) { i ->
                 payloadHex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
             }
-        } catch (_: Exception) { null }
+        } catch (e: Exception) { Log.d(TAG, "extractRawBytes hex parse failed: ${e.message}"); null }
     }
 
     private fun updateAccumulators() {
