@@ -1,11 +1,14 @@
 package com.rogerneumann.autovakt.util
 
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
+
+private const val TAG = "AutoVaktUpdate"
 
 object UpdateChecker {
 
@@ -33,8 +36,8 @@ object UpdateChecker {
                 if (latest != currentVersion) {
                     withContext(Dispatchers.Main) { onUpdateAvailable(latest) }
                 }
-            } catch (_: Exception) {
-                // No network, repo has no releases yet, or rate-limited — ignore silently.
+            } catch (e: Exception) {
+                Log.d(TAG, "update check failed: ${e.message}")
             }
         }
     }

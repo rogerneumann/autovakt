@@ -43,3 +43,4 @@ preview/
 # Claude Code agent worktrees/session state — local-only, never committed
 .claude/worktrees/
 .claude/scheduled_tasks.lock
+.aider*

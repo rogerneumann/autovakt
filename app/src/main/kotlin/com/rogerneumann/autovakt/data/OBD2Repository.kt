@@ -226,7 +226,7 @@ class OBD2Repository @Inject constructor(
                 queue.execute("ATSH $hdr")
                 val reopenResp = queue.execute("1003")
                 Log.d(TAG, "UDS session reopen → '${reopenResp.trim().take(40)}'")
-            } catch (e: CancellationException) { throw e } catch (_: Exception) { }
+            } catch (e: CancellationException) { throw e } catch (e: Exception) { Log.d(TAG, "UDS 1003 reopen failed: ${e.message}") }
         }
 
         // Track these for derived power calculation
@@ -335,7 +335,7 @@ class OBD2Repository @Inject constructor(
             for (code in codes) {
                 tripRepository.insertDtc(vin, code)
             }
-        } catch (_: Exception) { /* best-effort — don't fail the connection */ }
+        } catch (e: CancellationException) { throw e } catch (e: Exception) { Log.d(TAG, "DTC poll failed: ${e.message}") }
     }
 
     private fun extractRawBytes(response: String, command: String): ByteArray? {
