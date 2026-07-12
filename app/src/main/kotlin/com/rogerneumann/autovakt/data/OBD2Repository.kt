@@ -1,6 +1,7 @@
 package com.rogerneumann.autovakt.data
 
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import com.rogerneumann.autovakt.media.MediaRemoteManager
 import com.rogerneumann.autovakt.obd2.ConnectionState
 import com.rogerneumann.autovakt.obd2.ElmCommandQueue
@@ -338,7 +339,8 @@ class OBD2Repository @Inject constructor(
         } catch (e: CancellationException) { throw e } catch (e: Exception) { Log.d(TAG, "DTC poll failed: ${e.message}") }
     }
 
-    private fun extractRawBytes(response: String, command: String): ByteArray? {
+    @VisibleForTesting
+    internal fun extractRawBytes(response: String, command: String): ByteArray? {
         // Reassemble multi-frame responses: ATCAF1 prefixes each continuation frame with
         // a single-hex-digit line number ("0: ...", "1: ..."). Strip those before parsing.
         val clean = response.lines()
