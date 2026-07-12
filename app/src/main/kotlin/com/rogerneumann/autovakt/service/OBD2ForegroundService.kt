@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.car.app.connection.CarConnection
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.Observer
@@ -39,6 +40,8 @@ import javax.inject.Inject
  * When Android Auto is projecting the backoff floor is capped at 2 s so
  * the gauge display recovers quickly while driving.
  */
+private const val TAG = "AutoVaktService"
+
 @AndroidEntryPoint
 class OBD2ForegroundService : android.app.Service() {
 
@@ -108,7 +111,7 @@ class OBD2ForegroundService : android.app.Service() {
             delay(500L)
             transport.connect(address)
             repository.start(useDemoMode = false)
-        } catch (_: Exception) { /* watchdog will retry */ }
+        } catch (e: Exception) { Log.w(TAG, "connect attempt to $address failed: ${e.message}") }
     }
 
     /**

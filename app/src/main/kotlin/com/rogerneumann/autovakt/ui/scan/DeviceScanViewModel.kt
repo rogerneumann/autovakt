@@ -14,6 +14,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -36,6 +37,8 @@ data class ScannedDevice(
 enum class DeviceType {
     CLASSIC, BLE
 }
+
+private const val TAG = "AutoVaktScan"
 
 data class ScanState(
     val isScanning: Boolean = false,
@@ -165,7 +168,7 @@ class DeviceScanViewModel @Inject constructor(
             bleScanner?.stopScan(bleScanCallback)
             _scanState.value = _scanState.value.copy(isScanning = false)
         } catch (e: Exception) {
-            // Ignore errors during cleanup
+            Log.d(TAG, "stopScan cleanup error: ${e.message}")
         }
     }
 
