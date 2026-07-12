@@ -335,7 +335,7 @@ class OBD2Repository @Inject constructor(
             for (code in codes) {
                 tripRepository.insertDtc(vin, code)
             }
-        } catch (_: Exception) { /* best-effort — don't fail the connection */ }
+        } catch (e: CancellationException) { throw e } catch (e: Exception) { Log.d(TAG, "DTC poll failed: ${e.message}") }
     }
 
     private fun extractRawBytes(response: String, command: String): ByteArray? {
